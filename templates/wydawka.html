@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Wydawki (Expo)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+        
+        .pulse-yellow { animation: pulse-yellow 1.5s infinite; }
+        @keyframes pulse-yellow {
+            0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(234, 179, 8, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+        }
+        
+        .pulse-red { animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        /* --- MAPA SALI --- */
+        .table-node {
+            position: absolute; display: flex; align-items: center; justify-content: center;
+            border-radius: 12px; font-weight: 800; font-size: 1em; cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.1);
+            user-select: none;
+        }
+        .table-node:active { transform: scale(0.9); }
+        .t-free  { background: #1f6b2e; color: #a7f3d0; }
+        .t-open  { background: #1e40af; color: #bfdbfe; }
+        .t-ready { background: #15803d; color: #fff; border-color: #4ade80 !important; box-shadow: 0 0 14px rgba(74,222,128,0.5) !important; }
+        .t-dirty { background: #6b21a8; color: #e9d5ff; }
+        .t-call  { background: #1d4ed8; color: #fff; animation: pulseCall 1s infinite alternate; border: 2px solid #fff !important; }
+        .t-pay   { background: #92400e; color: #fef3c7; animation: pulsePay 1s infinite alternate; border: 2px solid #fbbf24 !important; }
+        @keyframes pulseCall { from { background: #1d4ed8; } to { background: #60a5fa; } }
+        @keyframes pulsePay  { from { background: #92400e; } to { background: #d97706; } }
+
+        /* --- GHOST TOAST --- */
+        #ghost-toast {
+            position: fixed; bottom: -120px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; transition: bottom 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none; min-width: 280px; text-align: center;
+        }
+        #ghost-toast.show { bottom: 40px; }
+        .ghost-bubble {
+            background: rgba(10,10,10,0.96); border: 1px solid #d4af37;
+            border-radius: 20px; padding: 14px 28px; color: #fff; font-weight: 700;
+            font-size: 0.95rem; box-shadow: 0 0 30px rgba(212,175,55,0.3), 0 10px 40px rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px); animation: ghostFloat 2.5s ease-in-out infinite;
+        }
+        @keyframes ghostFloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-5px); } }
+
+        /* --- GHOST CONFIRM --- */
+        #ghost-confirm {
+            position: fixed; inset: 0; z-index: 9998; display: flex;
+            align-items: flex-end; justify-content: center; padding-bottom: 40px;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+            opacity: 0; pointer-events: none; transition: opacity 0.25s;
+        }
+        #ghost-confirm.show { opacity: 1; pointer-events: all; }
+        .ghost-confirm-bubble {
+            background: rgba(12,12,12,0.98); border: 1px solid #d4af37;
+            border-radius: 24px; padding: 28px 32px; color: #fff; text-align: center;
+            box-shadow: 0 0 60px rgba(212,175,55,0.35), 0 20px 60px rgba(0,0,0,0.9);
+            max-width: 360px; width: 90%;
+            animation: ghostPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes ghostPop { from { transform:scale(0.5) translateY(60px); opacity:0; } to { transform:scale(1) translateY(0); opacity:1; } }
+        .ghost-confirm-bubble p { margin: 0 0 20px; font-size: 1.05rem; line-height: 1.5; }
+        .ghost-btn-yes { background: #d4af37; color: #000; border: none; padding: 12px 28px; border-radius: 12px; font-weight: 800; font-size: 0.95rem; cursor: pointer; margin-right: 10px; transition: 0.2s; }
+        .ghost-btn-yes:hover { background: #fff; }
+        .ghost-btn-no  { background: #222; color: #888; border: 1px solid #444; padding: 12px 28px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.2s; }
+        .ghost-btn-no:hover { color: #fff; border-color: #888; }
+
+        /* --- ANEGDOTA POPUP --- */
+        #anecdote-popup {
+            position: fixed; bottom: -300px; right: 24px; z-index: 9990;
+            width: 340px; max-width: calc(100vw - 48px);
+            transition: bottom 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #anecdote-popup.show { bottom: 24px; }
+        .anecdote-card {
+            background: linear-gradient(145deg, #0d0d0d, #1a1205);
+            border: 1px solid #d4af37;
+            border-radius: 20px;
+            padding: 20px 22px;
+            box-shadow: 0 0 50px rgba(212,175,55,0.25), 0 20px 60px rgba(0,0,0,0.9);
+            position: relative; overflow: hidden;
+        }
+        .anecdote-card::before {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(ellipse at top right, rgba(212,175,55,0.08), transparent 70%);
+            pointer-events: none;
+        }
+        .anecdote-ghost {
+            font-size: 2.2em; text-align: center; margin-bottom: 4px;
+            animation: ghostBob 2.5s ease-in-out infinite;
+            display: block;
+        }
+        @keyframes ghostBob { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-8px) rotate(3deg); } }
+        .anecdote-product {
+            font-size: 0.7em; font-weight: 800; color: #d4af37; text-transform: uppercase;
+            letter-spacing: 2px; text-align: center; margin-bottom: 8px; opacity: 0.8;
+        }
+        .anecdote-text {
+            font-size: 0.9em; line-height: 1.55; color: #e8e0cc; text-align: center;
+            min-height: 50px;
+        }
+        .anecdote-bar {
+            height: 3px; background: #222; border-radius: 3px; margin-top: 14px; overflow: hidden;
+        }
+        .anecdote-bar-fill {
+            height: 100%; background: linear-gradient(90deg, #d4af37, #f0c94d);
+            border-radius: 3px; width: 100%;
+            transition: width linear;
+        }
+        .anecdote-close {
+            position: absolute; top: 10px; right: 12px;
+            background: none; border: none; color: #555; cursor: pointer;
+            font-size: 1em; padding: 2px 6px; border-radius: 4px;
+            transition: color 0.2s;
+        }
+        .anecdote-close:hover { color: #fff; }
+
+        .ticket-compact { font-size: 0.85rem; line-height: 1.2; }
+        .stars-btn { font-size: 1.6em; cursor: pointer; filter: grayscale(1); transition: 0.2s; }
+        .stars-btn.active { filter: grayscale(0); transform: scale(1.1); }
+        
+        @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-slide-up { animation: slide-up 0.3s ease-out; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white h-screen overflow-hidden flex flex-col font-sans text-sm">
+    <div id="nfc-lock" class="fixed inset-0 bg-black/90 z-[9999] flex flex-col items-center justify-center backdrop-blur-xl transition-all duration-500">
+        <div class="text-center">
+            <div class="text-8xl mb-8 animate-pulse">🔒</div>
+            <h2 class="text-3xl font-black mb-2 text-white uppercase tracking-tighter">{{ brand }} SECURE POS</h2>
+            <p class="text-gray-400 text-lg">Zbliż identyfikator NFC, aby odblokować</p>
+            <div id="lock-status-msg" class="mt-4 text-yellow-500 font-bold hidden">⏳ Autoryzacja...</div>
+            <div class="mt-20 border-t border-gray-800 pt-8 w-full max-w-sm mx-auto">
+                <p class="text-[10px] uppercase tracking-widest text-gray-600 mb-4 font-bold">Obecnie na zmianie:</p>
+                <div id="active-staff-list" class="flex flex-wrap gap-2 justify-center"></div>
+            </div>
+        </div>
+    </div>
+    <div id="nfc-toast" class="fixed top-24 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none transition-all duration-300 opacity-0 transform -translate-y-4">
+        <div id="nfc-toast-inner" class="bg-blue-600 text-white px-8 py-3 rounded-full font-black shadow-2xl flex items-center gap-3 border-2 border-white/20">
+            <span id="nfc-toast-icon">👋</span>
+            <span id="nfc-toast-text">Witaj Marcin!</span>
+        </div>
+    </div>
+
+    <header class="bg-gray-800 p-3 shadow-md flex justify-between items-center border-b border-gray-700 shrink-0">
+        <div class="flex items-center gap-6">
+            <h1 class="text-xl font-bold text-gray-100 flex items-center">
+                <span class="bg-blue-600 text-white px-2 py-1 rounded mr-2 text-xs shadow">EXPO</span>
+                {{ brand }} Wydawka
+            </h1>
+            <div class="flex gap-3 text-[11px] uppercase font-bold tracking-wider">
+                <div class="bg-gray-900 px-3 py-1.5 rounded border border-gray-600 shadow-inner">
+                    Oczekujące: <span id="count-new" class="text-white text-sm ml-1">0</span>
+                </div>
+                <div class="bg-orange-900/30 px-3 py-1.5 rounded border border-orange-700/50 shadow-inner">
+                    W kuchni: <span id="count-prep" class="text-orange-400 text-sm ml-1">0</span>
+                </div>
+                <div class="bg-green-900/30 px-3 py-1.5 rounded border border-green-700/50 shadow-inner">
+                    Do wydania: <span id="count-ready" class="text-green-400 text-sm ml-1">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <button onclick="document.getElementById('nfc-lock').classList.remove('opacity-0', 'pointer-events-none'); isLocked=true;" class="bg-indigo-700 hover:bg-indigo-600 px-3 py-1.5 rounded border border-indigo-500 text-xs font-bold transition-all shadow flex items-center gap-2">
+                👥 PRACOWNICY
+            </button>
+            <div id="current-user-badge" class="hidden items-center gap-2 bg-blue-900/40 px-3 py-1 rounded-full border border-blue-700/50">
+                <div class="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+                <span id="current-user-name" class="text-xs font-bold text-blue-200 uppercase">ZALOGOWANY</span>
+            </div>
+            <button onclick="toggleSettings()" class="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded border border-gray-500 text-xs font-bold transition-all shadow">
+                ⚙️ KONFIGURACJA POS
+            </button>
+            <div class="text-gray-300 font-mono text-lg bg-black px-3 py-1 rounded border border-gray-700 shadow-inner" id="clock">00:00:00</div>
+        </div>
+    </header>
+
+    <div class="flex-1 grid grid-cols-12 gap-3 p-3 overflow-hidden">
+
+        <div class="col-span-3 bg-gray-800 rounded-xl flex flex-col border border-gray-700 overflow-hidden shadow-2xl">
+            <div class="bg-gray-700/50 px-3 py-1.5 font-bold border-b border-gray-600 text-xs tracking-widest flex justify-between items-center">
+                <span>🛒 KASA (WYNOS)</span>
+                <button onclick="openMenuOverlay()" class="bg-gray-600 hover:bg-yellow-600 hover:text-black text-gray-200 px-2 py-1 rounded text-[10px] font-black transition-all" title="Pełny widok menu">⊞ ROZWIŃ</button>
+            </div>
+
+            <div class="p-1 grid grid-cols-3 gap-1 overflow-y-auto shrink-0 border-b border-gray-700" style="max-height:42%" id="menu-grid">
+            </div>
+            
+            <div class="flex-1 flex flex-col bg-gray-900 overflow-hidden">
+                <div class="text-[10px] text-gray-500 p-2 font-bold uppercase tracking-widest bg-gray-950">Twój Koszyk:</div>
+                <div class="flex-1 overflow-y-auto p-2 space-y-1.5" id="cart-items"></div>
+                <div class="p-3 bg-gray-800 border-t border-gray-700 shadow-inner">
+                    <div class="flex justify-between font-black text-lg mb-2">
+                        <span>SUMA:</span>
+                        <span id="cart-total" class="text-yellow-500">0.00 zł</span>
+                    </div>
+                    <button onclick="submitCart()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg font-bold transition-all text-xs tracking-wider shadow-lg">
+                        WYŚLIJ ZAMÓWIENIE (WYNOS)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-span-6 bg-gray-800 rounded-xl flex flex-col border border-gray-700 overflow-hidden shadow-2xl">
+            <div class="bg-gray-700/50 p-2 font-bold text-center border-b border-gray-600 text-xs tracking-widest">🧾 AKTYWNE BONY</div>
+            <div class="flex-1 grid grid-cols-2 gap-3 p-3 overflow-y-auto align-start content-start">
+                
+                <div class="flex flex-col gap-3">
+                    <h2 class="text-yellow-500 font-black text-[10px] uppercase tracking-widest border-b border-yellow-900/50 pb-1 flex justify-between">
+                        <span>W Przygotowaniu</span>
+                    </h2>
+                    <div id="bony-unpaid" class="space-y-3"></div>
+                </div>
+                
+                <div class="flex flex-col gap-3">
+                    <h2 class="text-green-500 font-black text-[10px] uppercase tracking-widest border-b border-green-900/50 pb-1 flex justify-between">
+                        <span>Gotowe (Wydawka)</span>
+                    </h2>
+                    <div id="bony-ready" class="space-y-3"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="col-span-3 bg-gray-800 rounded-xl flex flex-col border border-gray-700 overflow-hidden shadow-2xl">
+            <div class="bg-gray-700/50 p-2 font-bold text-center border-b border-gray-600 text-xs tracking-widest flex justify-between px-4 items-center">
+                <span>🗺️ SALA</span>
+                <span id="pos-status-indicator" class="text-[9px] bg-red-900/50 text-red-400 px-2 py-0.5 rounded border border-red-800">POS OFFLINE</span>
+            </div>
+
+            <div class="flex flex-wrap gap-x-3 gap-y-1 text-[9px] justify-center bg-gray-900 px-2 py-1.5 border-b border-gray-700 font-bold text-gray-400">
+                <span class="flex items-center gap-1"><div style="width:10px;height:10px;background:#1f6b2e;border-radius:3px;"></div> Wolny</span>
+                <span class="flex items-center gap-1"><div style="width:10px;height:10px;background:#1e40af;border-radius:3px;"></div> Zajęty</span>
+                <span class="flex items-center gap-1"><div style="width:10px;height:10px;background:#15803d;border-radius:3px;border:1px solid #4ade80;"></div> Gotowe</span>
+                ${systemMode !== 'foodtruck' ? `
+                <span class="flex items-center gap-1"><div style="width:10px;height:10px;background:#1d4ed8;border-radius:3px;"></div> Kelner</span>
+                <span class="flex items-center gap-1"><div style="width:10px;height:10px;background:#92400e;border-radius:3px;"></div> Rachunek</span>
+                ` : ''}
+            </div>
+
+            <div id="floor-map-wrap" class="flex-1 relative overflow-auto bg-gray-950 p-3">
+                <div id="floor-map" class="relative mx-auto bg-black/40 rounded-lg" style="border:1px solid #1f2937;"></div>
+            </div>
+            
+            <!-- TABLE DETAILS POPUP -->
+            <div id="table-details-popup" class="hidden absolute inset-x-0 bottom-0 top-1/2 bg-gray-900 border-t-2 border-gold shadow-2xl z-20 flex flex-col p-4 animate-slide-up">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-black text-gold text-sm" id="details-table-title">STOLIK #0</h3>
+                    <button onclick="closeTableDetails()" class="text-gray-500 hover:text-white">✕</button>
+                </div>
+                <div id="details-items-list" class="flex-1 overflow-y-auto space-y-2 text-[11px] pr-2">
+                    <!-- Items here -->
+                </div>
+                <div class="mt-4 flex gap-2">
+                    <button id="details-btn-pay" class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-black font-black py-2 rounded text-[10px] uppercase">ZAPŁAĆ WSZYSTKO</button>
+                    <button onclick="closeTableDetails()" class="flex-1 bg-gray-700 py-2 rounded font-bold text-[10px]">ZAMKNIJ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FULLSCREEN MENU PICKER -->
+    <div id="menu-overlay" style="display:none; position:fixed; inset:0; z-index:8000; background:rgba(5,5,5,0.97); flex-direction:column; backdrop-filter:blur(6px);">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px solid #333; background:#111; shrink:0;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="color:#d4af37; font-weight:800; font-size:1.1em;">🛒 WYBIERZ PRODUKT</span>
+                <span id="overlay-cart-count" style="background:#1d4ed8; color:#fff; font-size:0.8em; font-weight:800; padding:3px 10px; border-radius:20px; display:none;"></span>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button onclick="submitCartFromOverlay()" id="overlay-send-btn" style="background:#16a34a; color:#fff; border:none; padding:10px 22px; border-radius:10px; font-weight:800; font-size:0.9em; cursor:pointer; display:none; transition:0.2s;">
+                    ✅ WYŚLIJ ZAMÓWIENIE
+                </button>
+                <button onclick="closeMenuOverlay()" style="background:#333; color:#aaa; border:1px solid #444; padding:10px 20px; border-radius:10px; font-weight:700; font-size:0.9em; cursor:pointer;">✕ ZAMKNIJ</button>
+            </div>
+        </div>
+        <div id="overlay-grid" style="flex:1; overflow-y:auto; padding:16px; display:grid; gap:10px; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); align-content:start;"></div>
+        <div id="overlay-cart-bar" style="display:none; padding:10px 16px; background:#1a1a1a; border-top:1px solid #333; font-size:0.85em; color:#aaa; display:flex; gap:8px; flex-wrap:wrap; align-items:center;"></div>
+    </div>
+
+    <!-- ANEGDOTA POPUP -->
+    
+
+    <!-- GHOST TOAST INFO -->
+    <div id="ghost-toast"><div class="ghost-bubble" id="ghost-toast-text">...</div></div>
+
+    <!-- GHOST CONFIRM (FISCAL DIALOG) -->
+    <div id="ghost-confirm">
+        <div class="ghost-confirm-bubble" style="max-width: 420px;">
+            <p id="ghost-confirm-text">Czy na pewno?</p>
+            <div id="payment-options" style="display:none; flex-direction:column; gap:10px; margin-bottom:20px;">
+                <button onclick="executePayment(true)" class="bg-green-600 hover:bg-green-500 py-3 rounded-xl font-bold text-white shadow-lg border border-green-400 flex flex-col items-center">
+                    <span class="text-sm">🧾 PARAGON FISKALNY</span>
+                    <span class="text-[9px] opacity-80 uppercase tracking-widest">Drobne / Karta / Gotówka (Elzab)</span>
+                </button>
+                <button onclick="executePayment(false)" class="bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold text-white shadow-lg border border-blue-400 flex flex-col items-center">
+                    <span class="text-sm">📝 PARAGON NIEFISKALNY</span>
+                    <span class="text-[9px] opacity-80 uppercase tracking-widest">Rachunek wewnętrzny</span>
+                </button>
+                <button onclick="executePaymentStatusOnly()" class="bg-gray-700 hover:bg-gray-600 py-3 rounded-xl font-bold text-gray-300 shadow-lg border border-gray-500 flex flex-col items-center">
+                    <span class="text-sm">🏁 TYLKO OZNACZ OPŁACONE</span>
+                    <span class="text-[9px] opacity-60 uppercase tracking-widest">Bez wysyłki do drukarek</span>
+                </button>
+            </div>
+            <div id="confirm-standard-btns" style="display:flex; gap:10px; justify-content:center;">
+                <button class="ghost-btn-yes" id="ghost-btn-yes">TAK</button>
+                <button class="ghost-btn-no"  onclick="closeGhostConfirm()">ANULUJ</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div id="modal-settings" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-800 border border-gray-600 rounded-xl p-6 max-w-md w-full shadow-2xl">
+            <h2 class="text-xl font-bold mb-2 text-gold">Konfiguracja {{ brand }} POS</h2>
+            <p class="text-gray-400 text-xs mb-4">Połącz panel z lokalną bramką Raspberry Pi (Drukarka Fiskalna).</p>
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Adres URL Bramki:</label>
+            <input type="text" id="pos-url-input" class="w-full bg-gray-900 border border-gray-600 p-3 rounded mt-1 mb-6 font-mono text-sm text-blue-300" placeholder="http://elvis.local:8080">
+            <div class="flex gap-3">
+                <button onclick="saveSettings()" class="flex-1 bg-green-600 hover:bg-green-500 py-3 rounded font-bold transition-all shadow">ZAPISZ I TESTUJ</button>
+                <button onclick="toggleSettings()" class="flex-1 bg-gray-600 hover:bg-gray-500 py-3 rounded font-bold transition-all shadow">ANULUJ</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script id="server-vars" type="application/json">
+        {
+            "systemMode": "{{ system_mode }}",
+            "nfcRequired": {{ 'true' if nfc_required else 'false' }}
+        }
+    </script>
+
+    <script>
+        const serverVars = JSON.parse(document.getElementById('server-vars').textContent);
+        const systemMode = serverVars.systemMode;
+        let layoutData = { width: 10, height: 10, tables: [] };
+        let menuItems = {};
+        let currentCart = [];
+        let globalOrders = [];
+
+        // --- ANEGDOTA PO ZAPŁACIE ---
+        let _anecdoteTimer = null;
+        const GHOST_EMOJIS = ['👻','🍔','🌮','🍟','🧙','🔮','✨','🍕','🥩','👽'];
+
+        function showAnecdotePopup(itemName, text) {
+            const popup = document.getElementById('anecdote-popup');
+            const ghost = document.getElementById('anecdote-ghost');
+            const prod  = document.getElementById('anecdote-product');
+            const txt   = document.getElementById('anecdote-text');
+            const bar   = document.getElementById('anecdote-bar-fill');
+
+            ghost.innerText = GHOST_EMOJIS[Math.floor(Math.random() * GHOST_EMOJIS.length)];
+            prod.innerText  = itemName;
+            txt.innerText   = text;
+            bar.style.transition = 'none';
+            bar.style.width = '100%';
+
+            popup.classList.add('show');
+
+            // Animacja paska
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    bar.style.transition = 'width 10s linear';
+                    bar.style.width = '0%';
+                });
+            });
+
+            clearTimeout(_anecdoteTimer);
+            _anecdoteTimer = setTimeout(closeAnecdote, 10500);
+        }
+
+        function closeAnecdote() {
+            document.getElementById('anecdote-popup').classList.remove('show');
+            clearTimeout(_anecdoteTimer);
+        }
+
+        async function fetchAnecdoteForTable(tableNum) {
+            const tableOrders = globalOrders.filter(o => String(o.table_number) === String(tableNum) && !o.paid);
+            if (tableOrders.length === 0) return;
+            const item = tableOrders[Math.floor(Math.random() * tableOrders.length)];
+            const itemName = item.burger_name;
+
+            // Pokaż od razu z tekstem ładowania
+            showAnecdotePopup(itemName, '⏳ Ładuję ciekawostkę...');
+
+            try {
+                // 1. Najpierw spróbuj pobrać historię przechowaną z zamawiania
+                const storedHistory = sessionStorage.getItem('tableOrderHistory');
+                if (storedHistory) {
+                    document.getElementById('anecdote-text').innerHTML = storedHistory;
+                    sessionStorage.removeItem('tableOrderHistory'); // Użyj raz
+                    return;
+                }
+
+                // 2. Jeśli nie ma przechowanej, generuj nową wiedzę edukacyjną
+                const res = await fetch(`/api/get_order_knowledge?items=${encodeURIComponent(itemName)}`);
+                const data = await res.json();
+                document.getElementById('anecdote-text').innerHTML = data.knowledge || '🍔 Smacznego! Każdy kęs to nowa historia...';
+            } catch(e) {
+                document.getElementById('anecdote-text').innerText = '🍔 Smacznego! Każdy kęs to mała historia.';
+            }
+        }
+
+        // --- GHOST TOAST ---
+        let _toastTimer = null;
+        function showToast(msg) {
+            const t = document.getElementById('ghost-toast');
+            document.getElementById('ghost-toast-text').innerText = msg;
+            t.classList.add('show');
+            clearTimeout(_toastTimer);
+            _toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+        }
+        let _ghostYes = null;
+        function showGhostConfirm(msg, onYes) {
+            document.getElementById('ghost-confirm-text').innerHTML = msg;
+            _ghostYes = onYes;
+            document.getElementById('ghost-btn-yes').onclick = () => { closeGhostConfirm(); onYes(); };
+            document.getElementById('ghost-confirm').classList.add('show');
+        }
+        function closeGhostConfirm() {
+            document.getElementById('ghost-confirm').classList.remove('show');
+        }
+
+        // ZEGAR GŁÓWNY I ODŚWIEŻANIE CZASU NA BONACH
+        setInterval(() => { 
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('pl-PL'); 
+            renderBony(globalOrders); // Ticking timerów na bonach!
+        }, 1000);
+
+        // --- KONFIGURACJA POS ---
+        function toggleSettings() { 
+            const m = document.getElementById('modal-settings');
+            m.classList.toggle('hidden');
+            if(!m.classList.contains('hidden')) {
+                document.getElementById('pos-url-input').value = localStorage.getItem('pos_url') || '';
+            }
+        }
+
+        async function saveSettings() {
+            const url = document.getElementById('pos-url-input').value;
+            localStorage.setItem('pos_url', url);
+            toggleSettings();
+            checkPosStatus();
+        }
+
+        async function checkPosStatus() {
+            try {
+                const res = await fetch('/api/device_status/Elvis_KWI_0326');
+                const data = await res.json();
+                const indicator = document.getElementById('pos-status-indicator');
+                if (data.status === 'online') {
+                    indicator.innerHTML = `POS: ONLINE (${data.ip || '?'})`;
+                    indicator.className = "text-[9px] bg-green-900/50 text-green-400 px-2 py-0.5 rounded border border-green-800 shadow";
+                    if(data.ip) localStorage.setItem('pos_url', `http://${data.ip}:8080`);
+                } else {
+                    indicator.innerText = "POS: OFFLINE";
+                    indicator.className = "text-[9px] bg-red-900/50 text-red-400 px-2 py-0.5 rounded border border-red-800 shadow";
+                }
+            } catch(e) { console.error("POS Status Error", e); }
+        }
+
+        // --- OBSŁUGA DANYCH GŁÓWNYCH ---
+        async function loadData() {
+            try {
+                const [lRes, aRes, oRes] = await Promise.all([
+                    fetch('/api/get_layout').then(r => r.json()),
+                    fetch('/api/active_tables').then(r => r.json()),
+                    fetch('/api/all_orders').then(r => r.json())
+                ]);
+
+                layoutData = lRes;
+                globalOrders = oRes.orders || [];
+                const actives = aRes.tables || [];
+
+                // 1. Liczniki w nagłówku (tylko nieopłacone)
+                const activeOrders = globalOrders.filter(o => !o.paid);
+                document.getElementById('count-new').innerText = activeOrders.filter(o => o.status === 'nowe').length;
+                document.getElementById('count-prep').innerText = activeOrders.filter(o => o.status === 'preparing').length;
+                document.getElementById('count-ready').innerText = activeOrders.filter(o => o.status === 'ready').length;
+
+                drawMap(actives, globalOrders);
+                renderBony(globalOrders);
+                
+            } catch(e) { console.error("Sync error", e); }
+        }
+
+        // --- MAPA I BRUDNE STOLIKI ---
+        function getMapScale() {
+            const wrap = document.getElementById('floor-map-wrap');
+            const w = wrap.clientWidth - 24;
+            const h = wrap.clientHeight - 24;
+            const scaleW = Math.floor(w / Math.max(layoutData.width, 1));
+            const scaleH = Math.floor(h / Math.max(layoutData.height, 1));
+            return Math.max(32, Math.min(scaleW, scaleH, 60));
+        }
+
+        function drawMap(actives, orders) {
+            const SCALE = getMapScale();
+            const f = document.getElementById('floor-map');
+            f.style.width  = (layoutData.width  * SCALE) + 'px';
+            f.style.height = (layoutData.height * SCALE) + 'px';
+            f.innerHTML = '';
+
+            layoutData.tables.forEach(t => {
+                const act = actives.find(a => String(a.table_number) === String(t.n));
+                const tableOrders = orders.filter(o =>
+                    String(o.table_number) === String(t.n) && o.session_id === act?.session_id
+                );
+
+                let cls = 't-free';
+                let label = t.n;
+
+                if (act) {
+                    const activeOrders = tableOrders.filter(o => !o.paid);
+                    const allPaid = tableOrders.length > 0 && tableOrders.every(o => o.paid === true);
+                    const hasReady = activeOrders.some(o => o.status === 'ready');
+
+                    if (allPaid) {
+                        cls = 't-dirty'; label = `${t.n} 🧹`;
+                    } else if (act.pay_request && systemMode !== 'foodtruck') {
+                        cls = 't-pay'; label = `${t.n} 💳`;
+                    } else if (act.call_waiter && systemMode !== 'foodtruck') {
+                        cls = 't-call'; label = `${t.n} 🛎`;
+                    } else if (hasReady) {
+                        cls = 't-ready'; label = `${t.n} ✓`;
+                    } else {
+                        cls = 't-open';
+                    }
+                }
+
+                const div = document.createElement('div');
+                div.className = `table-node ${cls}`;
+                div.style.width  = (SCALE - 6) + 'px';
+                div.style.height = (SCALE - 6) + 'px';
+                div.style.left   = (t.x * SCALE + 3) + 'px';
+                div.style.top    = (t.y * SCALE + 3) + 'px';
+                div.style.fontSize = Math.max(10, SCALE * 0.22) + 'px';
+                div.innerText = label;
+
+                if (cls === 't-dirty') {
+                    div.onclick = () => clearTable(t.n);
+                } else if (act) {
+                    div.onclick = () => showTableDetails(t.n);
+                }
+
+                f.appendChild(div);
+            });
+        }
+
+        async function showTableDetails(num) {
+            const popup = document.getElementById('table-details-popup');
+            const list = document.getElementById('details-items-list');
+            const title = document.getElementById('details-table-title');
+            const btnPay = document.getElementById('details-btn-pay');
+
+            title.innerText = `SZCZEGÓŁY STOLIKA #${num}`;
+            list.innerHTML = "⏳ Pobieranie...";
+            popup.classList.remove('hidden');
+
+            try {
+                const res = await fetch(`/api/wydawka/table_details/${num}`);
+                const data = await res.json();
+
+                if (!data.orders || data.orders.length === 0) {
+                    list.innerHTML = "<div class='text-gray-500 py-4 text-center'>Brak aktywnych zamówień.</div>";
+                    btnPay.style.display = 'none';
+                } else {
+                    let total = 0;
+                    const allPaid = data.orders.every(o => o.paid === true);
+
+                    list.innerHTML = data.orders.map(o => {
+                        total += o.price;
+                        let st = o.status === 'ready' ? '✓' : (o.status === 'preparing' ? '🔥' : '⏳');
+                        let stColor = o.status === 'ready' ? 'text-green-400' : 'text-gray-400';
+                        return `
+                        <div class="flex justify-between border-b border-gray-800 pb-1">
+                            <span class="${stColor}">${st} ${o.burger_name}</span>
+                            <span class="font-mono">${o.price.toFixed(2)} zł</span>
+                        </div>`;
+                    }).join('');
+
+                    if (allPaid) {
+                        btnPay.innerText = `✅ ZAPŁACONE (${total.toFixed(2)} zł)`;
+                        btnPay.disabled = true;
+                        btnPay.className = "flex-1 bg-gray-600 text-gray-400 font-black py-2 rounded text-[10px] uppercase cursor-not-allowed";
+                    } else {
+                        btnPay.innerText = serverVars.systemMode === 'foodtruck' ? `OZNACZ OPŁACONE (${total.toFixed(2)} zł)` : `ZAPŁAĆ WSZYSTKO (${total.toFixed(2)} zł)`;
+                        btnPay.disabled = false;
+                        btnPay.className = "flex-1 bg-yellow-600 hover:bg-yellow-500 text-black font-black py-2 rounded text-[10px] uppercase transition-transform active:scale-95 shadow-lg";
+                        btnPay.onclick = () => markPaid(num);
+                    }
+                    btnPay.style.display = 'block';
+                }
+            } catch(e) {
+                list.innerHTML = "❌ Błąd ładowania.";
+            }
+        }
+
+        async function deleteOrderItem(orderId) {
+            if (!confirm('Czy na pewno usunąć ten produkt?')) return;
+            try {
+                await fetch(`/api/admin/delete_order/${orderId}`, { method: 'POST' });
+                showToast('✅ Produkt usunięty!');
+                loadData();
+            } catch(e) {
+                showToast('❌ Błąd usuwania produktu.');
+            }
+        }
+
+        function closeTableDetails() {
+            document.getElementById('table-details-popup').classList.add('hidden');
+        }
+
+        async function clearTable(num) {
+            showGhostConfirm(
+                `🧹 Stolik <b>${num}</b> posprzątany?<br><small style="color:#888;font-weight:400">Stolik zostanie zwolniony dla nowych gości.</small>`,
+                async () => {
+                    await fetch(`/api/clear_table/${num}`, { method: 'POST' });
+                    showToast(`✅ Stolik ${num} zwolniony!`);
+                    loadData();
+                }
+            );
+        }
+
+        // --- BONY KUCHENNE ---
+        function renderBony(allOrders) {
+            const unpaidCont = document.getElementById('bony-unpaid');
+            const readyCont = document.getElementById('bony-ready');
+            unpaidCont.innerHTML = ''; readyCont.innerHTML = '';
+
+            const groups = {};
+            allOrders.filter(o => {
+                if (o.table_number === "0") return false;
+                // Wynos: wisi dopóki nie zamknięty (nawet po wydaniu)
+                if (String(o.table_number).startsWith('W')) return o.status !== 'closed';
+                // Stolik: znika gdy zamknięty
+                return o.status !== 'closed';
+            }).forEach(o => {
+                if (!groups[o.table_number]) groups[o.table_number] = {
+                    orders: [], total: 0, ready: true, allDispatched: true, allPaid: true
+                };
+                groups[o.table_number].orders.push(o);
+                groups[o.table_number].total += parseFloat(o.price);
+                // ready = wszystkie pozycje są 'ready' lub 'closed'
+                if (o.status !== 'ready' && o.status !== 'closed') groups[o.table_number].ready = false;
+                // allDispatched = wszystkie pozycje są 'closed'
+                if (o.status !== 'closed') groups[o.table_number].allDispatched = false;
+                // allPaid = wszystkie pozycje są opłacone
+                if (!o.paid) groups[o.table_number].allPaid = false;
+            });
+
+            for(const [tbl, data] of Object.entries(groups)) {
+                // Find the absolute oldest timestamp in this group for precise waiting time
+                const stamps = data.orders.map(o => o.timestamp).filter(t => t);
+                const oldestTs = stamps.length > 0 ? stamps.reduce((a, b) => new Date(a) < new Date(b) ? a : b) : null;
+                const timerText = getTimerText(oldestTs);
+
+                const isWynos = tbl.startsWith('W');
+
+                // Stan wizualny nagłówka
+                let tableLabel, headerColor, headerBg, borderColor;
+                const isFoodTruck = (systemMode === 'foodtruck');
+
+                if (!isWynos) {
+                    if (data.allPaid) {
+                        const prefix = isFoodTruck ? 'NUMER' : 'STÓŁ';
+                        tableLabel  = `${isFoodTruck ? '🔥 ' : ''}${prefix} ${tbl} · ✅ ZAPŁACONE`;
+                        headerColor = 'text-green-300';
+                        headerBg    = 'bg-green-900/40';
+                        borderColor = 'border-green-600';
+                    } else {
+                        const prefix = isFoodTruck ? 'NUMER' : 'STÓŁ';
+                        tableLabel  = `${isFoodTruck ? '🔥 ' : ''}${prefix} ${tbl}`;
+                        headerColor = 'text-blue-300';
+                        headerBg    = 'bg-gray-700';
+                        borderColor = 'border-gray-600';
+                    }
+                } else if (data.allPaid) {
+                    // Zapłacone
+                    tableLabel  = `🛵 WYNOS #${tbl.substring(1)} · ✅ ZAPŁACONE`;
+                    headerColor = 'text-green-300';
+                    headerBg    = 'bg-green-900/40';
+                    borderColor = 'border-green-600';
+                } else if (data.allDispatched) {
+                    // Wydano — czeka na zapłatę
+                    tableLabel  = `🛵 WYNOS #${tbl.substring(1)} · WYDANO`;
+                    headerColor = 'text-orange-300';
+                    headerBg    = 'bg-orange-900/50';
+                    borderColor = 'border-orange-600';
+                } else {
+                    tableLabel  = `🛵 WYNOS #${tbl.substring(1)}`;
+                    headerColor = 'text-purple-300';
+                    headerBg    = 'bg-purple-900/60';
+                    borderColor = 'border-purple-700';
+                }
+
+                const html = `
+                    <div class="bg-gray-800 border ${borderColor} rounded-lg overflow-hidden ticket-compact shadow-xl relative">
+                        <div class="${headerBg} p-1.5 flex justify-between items-center px-3 border-b ${borderColor}">
+                            <span class="font-black ${headerColor} tracking-wider">${tableLabel}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-mono bg-black text-yellow-400 px-1.5 py-0.5 rounded shadow-inner border border-gray-600">⏱️ ${timerText}</span>
+                            </div>
+                        </div>
+
+                        <div class="p-2 space-y-1.5 min-h-[50px] max-h-[30vh] overflow-y-auto bg-gray-900/50">
+                            ${data.orders.map(o => {
+                                // Pozycja już wydana (closed) — info z przyciskiem usunięcia
+                                if (o.status === 'closed') {
+                                    return `
+                                    <div class="flex justify-between items-start border-b border-gray-700/50 pb-1.5 opacity-60">
+                                        <span class="text-green-400 font-bold leading-tight">✅ ${o.burger_name}</span>
+                                        <div class="flex items-center gap-1.5 shrink-0">
+                                            <span class="text-[10px] font-mono text-gray-500">${o.price.toFixed(2)} zł</span>
+                                            <button onclick="deleteOrderItem('${o.id}')" class="bg-red-900/60 hover:bg-red-800 text-red-300 text-[9px] px-1.5 py-0.5 rounded border border-red-600 transition">✕</button>
+                                        </div>
+                                    </div>`;
+                                }
+                                let stColor, icon, statusDisplay;
+                                if (o.paid) {
+                                    stColor = 'text-green-300';
+                                    icon = '💳';
+                                    statusDisplay = 'ZAPŁACONE';
+                                } else {
+                                    stColor = o.status === 'ready' ? 'text-green-400' : (o.status === 'preparing' ? 'text-orange-400' : 'text-gray-400');
+                                    icon = o.status === 'ready' ? '✓' : (o.status === 'preparing' ? '🔥' : '⏳');
+                                    statusDisplay = null;
+                                }
+                                return `
+                                <div class="flex justify-between items-start border-b border-gray-700/50 pb-1.5 ${o.paid ? 'opacity-70' : ''}">
+                                    <div class="flex flex-col">
+                                        <span class="${stColor} font-bold leading-tight">${icon} ${o.burger_name}${statusDisplay ? ` · ${statusDisplay}` : ''}</span>
+                                        ${o.note ? `<span class="text-yellow-500 font-bold block text-[10px] mt-0.5">📝 U: ${o.note}</span>` : ''}
+                                    </div>
+                                    <div class="flex items-center gap-1.5 shrink-0">
+                                        <span class="text-[10px] font-mono text-gray-400">${o.price.toFixed(2)} zł</span>
+                                        ${o.paid ? `<span class="text-green-400 font-bold text-[9px]">✓</span>` :
+                                            (o.status === 'ready'
+                                                ? `<button onclick="updateItem('${o.id}', 'closed')" class="bg-green-900/80 hover:bg-green-700 text-green-100 text-[9px] px-1.5 py-0.5 rounded border border-green-600 transition">WYDAJ</button>`
+                                                : `<button onclick="updateItem('${o.id}', 'ready')"  class="bg-gray-700 hover:bg-gray-600 text-gray-300 text-[9px] px-1.5 py-0.5 rounded border border-gray-500 transition">GOTOWE</button>`)
+                                        }
+                                        <button onclick="deleteOrderItem('${o.id}')" class="bg-red-900/60 hover:bg-red-800 text-red-300 text-[9px] px-1.5 py-0.5 rounded border border-red-600 transition">✕</button>
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+
+                        <div class="p-2 bg-gray-800 border-t border-gray-700 flex gap-2">
+                            <button onclick="markPaid('${tbl}')" class="flex-1 ${data.allDispatched && isWynos ? 'bg-orange-600 hover:bg-orange-500' : 'bg-yellow-600 hover:bg-yellow-500'} text-black py-2 rounded font-black text-[10px] uppercase shadow-md transition-transform active:scale-95">
+                                💳 ${serverVars.systemMode === 'foodtruck' ? 'OPŁAĆ' : 'ZAPŁAĆ'} (${data.total.toFixed(2)} zł)
+                            </button>
+                            ${(data.ready && !data.allDispatched) ? `<button onclick="handleWydajBtn('${tbl}', '${data.orders[0].session_id}')" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[10px] uppercase shadow-md transition-transform active:scale-95">${isWynos ? '🛵 WYDAJ WYNOS' : '🍽️ WYDAJ STÓŁ'}</button>` : ''}
+                        </div>
+                    </div>
+                `;
+
+                if (data.ready || data.allDispatched) readyCont.insertAdjacentHTML('beforeend', html);
+                else unpaidCont.insertAdjacentHTML('beforeend', html);
+            }
+        }
+
+        function getTimerText(ts) {
+            if(!ts) return "00:00";
+            const diff = Math.floor((new Date() - new Date(ts)) / 1000);
+            if(diff < 0) return "00:00";
+            const m = Math.floor(diff/60);
+            const s = (diff%60).toString().padStart(2,'0');
+            return `${m}:${s}`;
+        }
+
+        async function updateItem(itemId, status) {
+            await fetch(`/api/update_status/${itemId}`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({status: status})
+            });
+            loadData();
+        }
+
+        async function wydajCalyStol(tableNum, sessionId) {
+            await fetch(`/api/wydawka/wydaj_bon`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ session_id: sessionId, table_number: tableNum })
+            });
+            const label = tableNum.startsWith('W') ? `Wynos #${tableNum.substring(1)}` : `Stół ${tableNum}`;
+            showToast(`🍽️ ${label} — wydano!`);
+            loadData();
+        }
+
+        let _pendingTableToPay = null;
+
+        async function markPaid(num) {
+            _pendingTableToPay = num;
+            _pendingWydawkaIssue = null;
+            showPaymentChoice();
+        }
+
+        function showPaymentChoice() {
+            document.getElementById('ghost-confirm-text').innerHTML = `💳 Płatność: <b>${_pendingTableToPay}</b>`;
+            document.getElementById('payment-options').style.display = 'flex';
+            document.getElementById('confirm-standard-btns').style.display = 'none';
+            document.getElementById('ghost-confirm').classList.add('show');
+        }
+
+        let _pendingWydawkaIssue = null;
+        function handleWydajBtn(num, sid) {
+            if (serverVars.systemMode === 'foodtruck') {
+                // W trybie foodtruck WYDAJ = WYDRUK + WYDANIE
+                _pendingTableToPay = num;
+                _pendingWydawkaIssue = { tableNum: num, sessionId: sid };
+                showPaymentChoice();
+            } else {
+                wydajCalyStol(num, sid);
+            }
+        }
+
+        async function executePayment(isFiscal) {
+            const tableNum = _pendingTableToPay;
+            const issueData = _pendingWydawkaIssue;
+            closeGhostConfirm();
+            
+            try {
+                const res = await fetch(`/api/mark_paid/${tableNum}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ fiscal: isFiscal })
+                });
+                const data = await res.json();
+                
+                if (data.ok) {
+                    showToast(isFiscal ? `⏳ Fiskalizacja: ${tableNum}...` : `✅ Rachunek (Niefiskalny): ${tableNum}`);
+                    if (issueData) {
+                        await wydajCalyStol(issueData.tableNum, issueData.sessionId);
+                    } else {
+                        loadData();
+                    }
+                    fetchAnecdoteForTable(tableNum);
+                } else {
+                    showToast("❌ Błąd: " + (data.error || "Płatność nieudana"));
+                }
+            } catch (e) {
+                showToast("❌ Błąd serwera.");
+            } finally {
+                _pendingWydawkaIssue = null;
+            }
+        }
+
+        async function executePaymentStatusOnly() {
+            const tableNum = _pendingTableToPay;
+            const issueData = _pendingWydawkaIssue;
+            closeGhostConfirm();
+            
+            try {
+                await fetch(`/api/soft_pay/${tableNum}`, { method: 'POST' });
+                
+                showToast(`🏁 Status: ${tableNum} - OPŁACONE.`);
+                if (issueData) {
+                    await wydajCalyStol(issueData.tableNum, issueData.sessionId);
+                } else {
+                    loadData();
+                }
+            } catch (e) {
+                showToast("❌ Błąd statusu.");
+            } finally {
+                _pendingWydawkaIssue = null;
+            }
+        }
+
+        function closeGhostConfirm() {
+            document.getElementById('ghost-confirm').classList.remove('show');
+            // reset state
+            setTimeout(() => {
+                document.getElementById('payment-options').style.display = 'none';
+                document.getElementById('confirm-standard-btns').style.display = 'flex';
+                document.getElementById('ghost-confirm-text').innerText = "Czy na pewno?";
+            }, 300);
+        }
+
+        // --- MENU WYNOS Z OBRAZKAMI ---
+        async function loadMenu() {
+            const res = await fetch('/api/get_menu');
+            menuItems = await res.json();
+            renderMenuGrid();
+            renderOverlayGrid();
+        }
+
+        function renderMenuGrid() {
+            const grid = document.getElementById('menu-grid');
+            grid.innerHTML = Object.entries(menuItems).map(([key, item]) => `
+                <button onclick="addToCart('${key}')" style="background:#1f2937; border:1px solid #374151; border-radius:8px; padding:4px; display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; transition:all 0.15s; active:transform:scale(0.93);" onmousedown="this.style.opacity='0.7'" onmouseup="this.style.opacity='1'" ontouchstart="this.style.opacity='0.7'" ontouchend="this.style.opacity='1'">
+                    <div style="width:100%; height:40px; background:#000; border-radius:5px; overflow:hidden;">
+                        <img src="/static/images/${item.image}" onerror="this.style.display='none'" style="width:100%; height:100%; object-fit:contain; opacity:0.9; padding:2px;">
+                    </div>
+                    <span style="font-size:9px; font-weight:700; color:#e5e7eb; text-align:center; line-height:1.1; width:100%; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${item.name}</span>
+                    <span style="font-size:10px; font-weight:900; color:#60a5fa;">${item.price} zł</span>
+                </button>
+            `).join('');
+        }
+
+        function renderOverlayGrid() {
+            const grid = document.getElementById('overlay-grid');
+            grid.innerHTML = Object.entries(menuItems).map(([key, item]) => `
+                <button onclick="addToCartOverlay('${key}')" id="overlay-item-${key.replace(/[^a-zA-Z0-9]/g,'_')}" style="background:#111; border:2px solid #1f2937; border-radius:14px; padding:8px 6px; display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; transition:all 0.2s; position:relative;" onmouseenter="this.style.borderColor='#d4af37'" onmouseleave="this.style.borderColor=cartCountFor('${key}')>0?'#3b82f6':'#1f2937'">
+                    <div id="overlay-badge-${key.replace(/[^a-zA-Z0-9]/g,'_')}" style="display:none; position:absolute; top:-6px; right:-6px; background:#3b82f6; color:#fff; border-radius:50%; width:20px; height:20px; font-size:11px; font-weight:900; align-items:center; justify-content:center; border:2px solid #000;"></div>
+                    <div style="width:100%; height:70px; background:#000; border-radius:8px; overflow:hidden;">
+                        <img src="/static/images/${item.image}" onerror="this.style.display='none'" style="width:100%; height:100%; object-fit:contain; padding:4px;">
+                    </div>
+                    <span style="font-size:11px; font-weight:700; color:#f3f4f6; text-align:center; line-height:1.2;">${item.name}</span>
+                    <span style="font-size:13px; font-weight:900; color:#60a5fa;">${item.price} zł</span>
+                </button>
+            `).join('');
+        }
+
+        function cartCountFor(key) {
+            return currentCart.filter(i => i.name === menuItems[key]?.name).length;
+        }
+
+        function openMenuOverlay() {
+            document.getElementById('menu-overlay').style.display = 'flex';
+            updateOverlayBadges();
+        }
+        function closeMenuOverlay() {
+            document.getElementById('menu-overlay').style.display = 'none';
+        }
+
+        function updateOverlayBadges() {
+            const total = currentCart.length;
+            const countEl = document.getElementById('overlay-cart-count');
+            const sendBtn = document.getElementById('overlay-send-btn');
+            if (total > 0) {
+                countEl.innerText = `${total} szt. w koszyku`;
+                countEl.style.display = 'inline';
+                sendBtn.style.display = 'inline-block';
+            } else {
+                countEl.style.display = 'none';
+                sendBtn.style.display = 'none';
+            }
+            // odświeżamy badge na każdym kaflu
+            Object.keys(menuItems).forEach(key => {
+                const safeKey = key.replace(/[^a-zA-Z0-9]/g,'_');
+                const badge = document.getElementById(`overlay-badge-${safeKey}`);
+                const btn   = document.getElementById(`overlay-item-${safeKey}`);
+                if (!badge || !btn) return;
+                const cnt = cartCountFor(key);
+                if (cnt > 0) {
+                    badge.innerText = cnt;
+                    badge.style.display = 'flex';
+                    btn.style.borderColor = '#3b82f6';
+                } else {
+                    badge.style.display = 'none';
+                    btn.style.borderColor = '#1f2937';
+                }
+            });
+        }
+
+        function addToCartOverlay(key) {
+            currentCart.push(menuItems[key]);
+            renderCart();
+            updateOverlayBadges();
+        }
+
+        async function submitCartFromOverlay() {
+            closeMenuOverlay();
+            await submitCart();
+        }
+
+        function addToCart(key) { currentCart.push(menuItems[key]); renderCart(); }
+
+        function renderCart() {
+            const cont = document.getElementById('cart-items');
+            let total = 0;
+            cont.innerHTML = currentCart.map((item, idx) => {
+                total += parseFloat(item.price);
+                return `<div class="flex justify-between items-center bg-gray-800 p-2 rounded-lg text-[11px] border border-gray-700 shadow-sm">
+                    <span class="font-bold text-gray-300 truncate">${item.name}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-yellow-500 font-mono">${item.price} zł</span>
+                        <button onclick="currentCart.splice(${idx},1);renderCart()" class="text-red-400 bg-red-900/30 px-1.5 rounded font-bold hover:bg-red-800 hover:text-white transition">✕</button>
+                    </div>
+                </div>`;
+            }).join('');
+            document.getElementById('cart-total').innerText = total.toFixed(2) + ' zł';
+        }
+
+        async function submitCart() {
+            if (currentCart.length === 0) return showToast("🛒 Koszyk jest pusty!");
+
+            // Numer wynos 1-20, cyklicznie
+            let wynosNum = parseInt(localStorage.getItem('wynos_counter') || '0') + 1;
+            if (wynosNum > 20) wynosNum = 1;
+            localStorage.setItem('wynos_counter', wynosNum);
+
+            const session_id = "wynos_" + Math.random().toString(36).substr(2, 9);
+            const tableNum = "W" + wynosNum;
+
+            for (const item of currentCart) {
+                await fetch('/api/orders', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        table_number: tableNum, burger_name: item.name, price: item.price,
+                        to_kitchen: item.to_kitchen !== undefined ? item.to_kitchen : true, session_id: session_id
+                    })
+                });
+            }
+            currentCart = []; renderCart(); loadData();
+            showToast(`🛵 Wynos #${wynosNum} — wysłano do kuchni!`);
+        }
+
+        // --- BEZPIECZEŃSTWO ---
+        function checkAccess() {
+            // Jeśli administrator wyłączył NFC/PIN globanie -> wpuść bez pytania
+            if (serverVars.nfcRequired === false) return true;
+
+            const pin = localStorage.getItem('staff_pin');
+            const role = localStorage.getItem('staff_role');
+            if(!pin || !['wydawka', 'admin', 'master'].includes(role)) {
+                window.location.href = '/portal';
+                return false;
+            }
+            return true;
+        }
+
+        // --- NFC & SECURITY LOGIC ---
+        let nfcBuffer = "";
+        let nfcTimeout = null;
+        let isLocked = true;
+
+        window.addEventListener("keydown", (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key === "Enter") {
+                if (nfcBuffer.length > 3) processNfcTag(nfcBuffer);
+                nfcBuffer = "";
+            } else if (/^[0-9a-zA-Z]$/.test(e.key)) {
+                nfcBuffer += e.key;
+                clearTimeout(nfcTimeout);
+                nfcTimeout = setTimeout(() => { nfcBuffer = ""; }, 400);
+            }
+        });
+
+        async function processNfcTag(id) {
+            document.getElementById('lock-status-msg').classList.remove('hidden');
+            const fd = new FormData(); fd.append('nfc_id', id);
+            try {
+                const res = await fetch('/auth/nfc_toggle', { method: 'POST', body: fd });
+                const data = await res.json();
+                document.getElementById('lock-status-msg').classList.add('hidden');
+                if (data.success) showNfcToast(data.staff_name, data.event === 'login');
+                else showToast("❌ Odmowa: " + (data.error || "Błąd"));
+            } catch (e) { showToast("❌ Błąd NFC"); }
+        }
+
+        function showNfcToast(name, isLogin) {
+            const toast = document.getElementById('nfc-toast');
+            const inner = document.getElementById('nfc-toast-inner');
+            document.getElementById('nfc-toast-text').innerText = isLogin ? `Witaj ${name}!` : `Do widzenia ${name}!`;
+            document.getElementById('nfc-toast-icon').innerText = isLogin ? '👋' : '🏁';
+            inner.className = isLogin ? 'bg-green-600 text-white px-8 py-3 rounded-full font-black shadow-2xl flex items-center gap-3 border-2 border-white/20' : 'bg-red-600 text-white px-8 py-3 rounded-full font-black shadow-2xl flex items-center gap-3 border-2 border-white/20';
+            toast.classList.remove('opacity-0', '-translate-y-4');
+            setTimeout(() => { toast.classList.add('opacity-0', '-translate-y-4'); }, 3000);
+        }
+
+        async function fetchActiveStaff() {
+            try {
+                const res = await fetch('/api/active_staff');
+                const data = await res.json();
+                const active = data.staff || [];
+                const lockS = document.getElementById('nfc-lock');
+                const list = document.getElementById('active-staff-list');
+                const userBadge = document.getElementById('current-user-badge');
+                
+                list.innerHTML = '';
+                if (active.length > 0) {
+                    lockS.classList.add('opacity-0', 'pointer-events-none');
+                    isLocked = false;
+                    userBadge.classList.remove('hidden');
+                    userBadge.classList.add('flex');
+                    document.getElementById('current-user-name').innerText = active[0].name;
+                    active.forEach(s => {
+                        const div = document.createElement('div');
+                        div.className = "bg-gray-800 text-gray-300 px-3 py-1 rounded border border-gray-700 text-[10px] font-bold";
+                        div.innerText = `🟢 ${s.name}`;
+                        list.appendChild(div);
+                    });
+                } else {
+                    lockS.classList.remove('opacity-0', 'pointer-events-none');
+                    isLocked = true;
+                    userBadge.classList.add('hidden');
+                }
+            } catch (e) {}
+        }
+
+        // --- START APLIKACJI ---
+        function startApp() {
+            if (serverVars.nfcRequired === false) {
+                console.log("NFC Bypass Active");
+                isLocked = false;
+                const overlay = document.getElementById("nfc-lock");
+                if (overlay) overlay.style.display = "none";
+            } else if(!checkAccess()) return;
+            
+            loadMenu();
+            loadData();
+            checkPosStatus();
+            fetchActiveStaff();
+            
+            function connectWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+                ws.onmessage = function(event) {
+                    try { 
+                        const data = JSON.parse(event.data); 
+                        if (data.type === 'update') loadData();
+                        if (data.type === 'nfc_auth') fetchActiveStaff();
+                        if (data.type === 'receipt_ack') {
+                            showToast(data.status === 'error' ? `❌ Błąd druku` : `🧾 Wydrukowano paragon ✅`);
+                            loadData();
+                        }
+                    } catch(e){}
+                };
+                ws.onclose = () => setTimeout(connectWebSocket, 2000);
+            }
+            connectWebSocket();
+        }
+        
+        startApp();
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                if (document.getElementById('menu-overlay').style.display !== 'none') closeMenuOverlay();
+                else closeGhostConfirm();
+            }
+        });
+        window.addEventListener('resize', () => {
+            if(globalOrders.length > 0 || layoutData.tables.length > 0) loadData();
+        });
+    </script>
+</body>
+</html>

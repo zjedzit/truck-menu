@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ brand }} FOOD TRUCK MODE</title>
+    <style>
+        :root { --gold: #d4af37; --bg: #0a0a0a; --card: #1a1a1a; --danger: #ff5252; --shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        body { background: var(--bg); color: #ececec; font-family: 'Inter', sans-serif; padding: 40px; margin: 0; line-height: 1.6; }
+        .hidden { display: none; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: var(--card); border: 1px solid #333; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: var(--shadow); transition: transform 0.2s; }
+        .card:hover { transform: translateY(-2px); }
+        h1, h2, h3, h4 { color: var(--gold); margin-top: 0; letter-spacing: 0.5px; }
+        p { color: #aaa; font-size: 0.9em; }
+        input, select, textarea { width: 100%; box-sizing: border-box; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; outline: none; transition: border-color 0.3s; }
+        input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+        button { background: var(--gold); color: #000; font-weight: 800; cursor: pointer; border: none; padding: 12px 24px; border-radius: 8px; text-transform: uppercase; font-size: 0.85em; transition: all 0.3s; width: 100%; margin-top: 10px; }
+        button:hover { background: #f0c94d; filter: brightness(1.1); box-shadow: 0 0 15px rgba(212, 175, 55, 0.3); }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: #f67070; box-shadow: 0 0 15px rgba(255, 82, 82, 0.3); }
+        .btn-secondary { background: #333; color: #fff; }
+        .btn-secondary:hover { background: #444; }
+        hr { border: 0; border-top: 1px solid #333; margin: 20px 0; }
+        a.button-link { display: block; text-align: center; background: var(--gold); color: #000; padding: 15px; font-weight: bold; text-decoration: none; border-radius: 8px; margin-top: 20px; }
+        #login-error { color: var(--danger); margin-top: 12px; font-weight: bold; font-size: 0.9em; display: none; text-align: center; }
+        #pin-input { text-align: center; font-size: 2em; letter-spacing: 12px; font-weight: 900; color: var(--gold); }
+        .mode-indicator { 
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header style="text-align: center; margin-bottom: 40px;">
+            <h1>{{ brand }} <span style="font-weight: 400; color: #666;">|</span> FOOD TRUCK MODE</h1>
+            <p>Tryb mobilny dla serwisu ziemnego</p>
+        </header>
+
+        <div class="mode-indicator">
+            🚚 TRYB MOBILNY AKTYWNY
+        </div>
+
+        <div class="card" style="border-left: 4px solid var(--gold);">
+            <h2>📋 Panel Zarządzania Zawieszeniem</h2>
+            <p>W tym trybie możesz zarządzać zamówieniami w ramach serwisu ziemnego. Wszystkie funkcje są zoptymalizowane pod kątem mobilności.</p>
+        </div>
+
+        <div class="card">
+            <h3>📊 Statystyki Dnia</h3>
+            <p>W trybie Food Truck statystyki są dostosowane do mobilnego modelu biznesowego.</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                <div style="background: #000; padding: 15px; border-radius: 8px; border: 1px solid #333;">
+                    <h4 style="margin: 0; color: var(--gold);">Zamówienia</h4>
+                    <p style="font-size: 1.5em; margin: 10px 0;">0</p>
+                    <p style="color: #888; font-size: 0.8em;">Obecnie aktywne</p>
+                </div>
+                <div style="background: #000; padding: 15px; border-radius: 8px; border: 1px solid #333;">
+                    <h4 style="margin: 0; color: var(--gold);">Zysk</h4>
+                    <p style="font-size: 1.5em; margin: 10px 0;">0 zł</p>
+                    <p style="color: #888; font-size: 0.8em;">Dzisiejszy</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📍 Lokalizacja</h3>
+            <p>Twoja lokalizacja jest aktualizowana automatycznie. W razie potrzeby możesz ją ręcznie ustawić.</p>
+            <div style="margin-top: 15px;">
+                <input type="text" id="location-input" placeholder="Wprowadź lokalizację (np. ul. Kolorowa 12, Kraków)" style="margin-bottom: 10px;">
+                <button onclick="updateLocation()">Zaktualizuj Lokalizację</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📱 QR Generator</h3>
+            <p>Generuj kody QR dla klientów w trakcie serwisu ziemnego.</p>
+            <div style="margin-top: 15px;">
+                <button onclick="generateQRCode()">Wygeneruj Nowy Kod QR</button>
+                <div id="qr-display" style="margin-top: 15px; text-align: center; display: none;">
+                    <img id="qr-image" src="" alt="QR Code" style="max-width: 200px; height: auto;">
+                    <p style="margin-top: 10px;">Kod QR dla klienta</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🚚 Status Serwisu</h3>
+            <p>Stan Twojej operacji serwisowej ziemnego.</p>
+            <div style="margin-top: 15px;">
+                <div style="background: #000; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 10px;">
+                    <h4 style="margin: 0; color: var(--gold);">Status</h4>
+                    <p style="font-size: 1.2em; margin: 10px 0;">Aktywny</p>
+                    <p style="color: #888; font-size: 0.8em;">Gotowy do przyjęcia zamówień</p>
+                </div>
+                <button class="btn-danger" onclick="endShift()">Zakończ Zmianę</button>
+            </div>
+        </div>
+
+        <div class="card" style="background: linear-gradient(145deg, #1a1a1a, #252525);">
+            <h3>🔙 Powrót do Systemu</h3>
+            <p>Wróć do głównego panelu systemu.</p>
+            <a href="/" class="button-link">PRZEJDŹ DO MENU GŁÓWNEGO</a>
+        </div>
+    </div>
+
+    <script>
+        // Simple QR code generator (for demo purposes)
+        function generateQRCode() {
+            // In a real implementation, this would call an API to generate a QR code
+            const qrDisplay = document.getElementById('qr-display');
+            const qrImage = document.getElementById('qr-image');
+            
+            // For demo, we'll just show a placeholder
+            qrImage.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzAwMCIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjEwIiBmaWxsPSIjZDRhZjM3Ii8+PC9zdmc+';
+            qrDisplay.style.display = 'block';
+        }
+
+        function updateLocation() {
+            const locationInput = document.getElementById('location-input');
+            alert(`Lokalizacja zaktualizowana do: ${locationInput.value}`);
+        }
+
+        function endShift() {
+            if (confirm('Czy na pewno chcesz zakończyć zmianę?')) {
+                alert('Zmiana zakończona. Wszystkie dane zostały zapisane.');
+            }
+        }
+    </script>
+</body>
+</html>

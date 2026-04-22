@@ -1,0 +1,37 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: elvis_mongo_local
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - elvis_net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: elvis_app_local
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+    volumes:
+      - .:/opt/elvis:cached
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongo
+    networks:
+      - elvis_net
+    command: ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8080", "main:app"]
+
+networks:
+  elvis_net:
+
+volumes:
+  mongo_data:

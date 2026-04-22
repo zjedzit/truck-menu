@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zjedz.it POS — Katalog Sprzętu "Premium Hardware" | Full Specs</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #f5a623;
+            --primary-light: #ffd166;
+            --primary-dark: #c47d0a;
+            --bg: #05060a;
+            --bg-card: #0e111a;
+            --bg-alt: #121622;
+            --text: #ffffff;
+            --text-muted: #8a91a1;
+            --border: rgba(255,255,255,0.08);
+            --radius: 32px;
+            --gradient: linear-gradient(135deg, #f5a623 0%, #ff8c00 100%);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+
+        /* ─── HEADER ─── */
+        header { padding: 100px 0 60px; text-align: center; border-bottom: 1px solid var(--border); }
+        .logo { font-size: 2em; font-weight: 950; color: var(--primary); margin-bottom: 20px; }
+        .logo span { color: #fff; }
+        h1 { font-size: clamp(3em, 8vw, 5em); font-weight: 950; letter-spacing: -3px; line-height: 0.9; margin-bottom: 25px; }
+        h1 .acc { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .tagline { color: var(--text-muted); font-size: 1.4em; max-width: 800px; margin: 0 auto; }
+
+        /* ─── SYSTEM OVERVIEW HERO ─── */
+        .system-hero { margin: 80px 0; border-radius: 50px; overflow: hidden; position: relative; border: 1px solid var(--border); }
+        .system-hero img { width: 100%; display: block; filter: brightness(0.7); }
+        .system-overlay {
+            position: absolute; bottom: 0; left: 0; right: 0; padding: 60px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            text-align: left;
+        }
+        .system-overlay h2 { font-size: 2.5em; font-weight: 950; margin-bottom: 10px; }
+        .system-overlay p { font-size: 1.25em; color: var(--primary); font-weight: 700; }
+
+        /* ─── HARDWARE SECTIONS ─── */
+        .section-header { margin: 100px 0 40px; }
+        .section-header h2 { font-size: 2.5em; font-weight: 950; border-left: 8px solid var(--primary); padding-left: 25px; color: #fff; }
+
+        .hw-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 40px;
+            margin-bottom: 80px;
+        }
+
+        .hw-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 40px;
+            border: 1px solid var(--border);
+            transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .hw-card:hover { border-color: var(--primary); transform: scale(1.03); box-shadow: 0 40px 80px rgba(0,0,0,0.6); }
+
+        .device-frame {
+            background: #000;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            border: 8px solid #1c1f26;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .device-frame img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: 0.5s; }
+        .hw-card:hover .device-frame img { opacity: 1; transform: scale(1.05); }
+
+        .hw-name { font-size: 1.8em; font-weight: 950; margin-bottom: 12px; letter-spacing: -1px; }
+        .hw-badge { background: rgba(245,166,35,0.1); color: var(--primary); padding: 4px 12px; border-radius: 8px; font-size: 0.75em; font-weight: 950; margin-bottom: 15px; display: inline-block; }
+        .hw-desc { font-size: 1em; color: var(--text-muted); margin-bottom: 30px; }
+        
+        .hw-stats { display: flex; gap: 20px; border-top: 1px solid var(--border); padding-top: 20px; }
+        .stat-item { text-align: left; }
+        .stat-val { display: block; font-weight: 950; color: #fff; font-size: 1.1em; }
+        .stat-label { font-size: 0.75em; color: var(--text-muted); text-transform: uppercase; }
+
+        .hw-footer { margin-top: 30px; display: flex; justify-content: space-between; align-items: baseline; }
+        .price { font-size: 2.2em; font-weight: 950; color: var(--primary); letter-spacing: -1px; }
+        .price span { font-size: 0.4em; color: var(--text-muted); margin-left: -5px; }
+
+        /* ─── CTA BANNER ─── */
+        .cta-banner {
+            background: var(--gradient);
+            border-radius: 40px;
+            padding: 80px;
+            text-align: center;
+            color: #000;
+            margin: 100px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .cta-banner h2 { font-size: 3em; font-weight: 950; line-height: 1; margin-bottom: 20px; }
+        .cta-banner p { font-size: 1.25em; font-weight: 700; opacity: 0.8; }
+
+        /* ─── FOOTER ─── */
+        footer { padding: 100px 0 40px; text-align: center; border-top: 1px solid var(--border); opacity: 0.4; }
+
+        @media (max-width: 900px) {
+            h1 { font-size: 2.2em; }
+            .hw-grid { grid-template-columns: 1fr; }
+            .cta-banner { padding: 40px; }
+            .cta-banner h2 { font-size: 2em; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="logo">zjedz<span>.it</span> POS</div>
+        <h1>Profesjonalna Architektura <br><span class="acc">Sprzętowa</span></h1>
+        <p class="tagline">Niezawodność klasy przemysłowej. Każdy element mierzony milisekundami i testowany w najcięższych warunkach gastronomii.</p>
+    </header>
+
+    <!-- OVERVIEW HERO -->
+    <div class="system-hero">
+        <img src="../static/images/offer/ze strony.png" alt="Zjedz.it Ekosystem">
+        <div class="system-overlay">
+            <h2>Pełen Ekosystem Zjedz.it</h2>
+            <p>Technologia, która nie bierze jeńców. Jeden system, nieskończony zysk.</p>
+        </div>
+    </div>
+
+    <!-- MÓZGI OPERACYJNE -->
+    <div class="section-header">
+        <h2>Mózgi Operacyjne</h2>
+    </div>
+    <div class="hw-grid">
+        <!-- EDGE MASTER -->
+        <div class="hw-card">
+            <div>
+                <div class="device-frame">
+                    <img src="../static/images/offer/edge_node.png" alt="Edge Node">
+                </div>
+                <div class="hw-badge">CRITICAL NODE</div>
+                <div class="hw-name">Edge Master Node</div>
+                <p class="hw-desc">Twoja lokalna baza danych MongoDB i serwer aplikacji. RPi 5 z dyskiem NVMe – gwarancja szybkości, której nie dotrzyma konkurencja oparta na chmurze.</p>
+            </div>
+            <div>
+                <div class="hw-stats">
+                    <div class="stat-item"><span class="stat-val">RPi 5 + NVMe</span><span class="stat-label">Power</span></div>
+                    <div class="stat-item"><span class="stat-val">SSD-Speed</span><span class="stat-label">Latency</span></div>
+                </div>
+                <div class="hw-footer">
+                    <div class="price">850<span> PLN Netto</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5G BRIDGE -->
+        <div class="hw-card">
+            <div>
+                <div class="device-frame">
+                    <img src="../static/images/offer/qr menu and waiter.png" alt="Connectivity">
+                </div>
+                <div class="hw-badge">CONNECTIVITY</div>
+                <div class="hw-name">5G Industrial Bridge</div>
+                <p class="hw-desc">Solidny punkt dostępowy o wysokim zysku. Zapewnia zasięg menu QR nawet na rozległych ogródkach i festiwalach.</p>
+            </div>
+            <div>
+                <div class="hw-stats">
+                    <div class="stat-item"><span class="stat-val">Sim-Dual</span><span class="stat-label">Mode</span></div>
+                    <div class="stat-item"><span class="stat-val">3-Band</span><span class="stat-label">Radio</span></div>
+                </div>
+                <div class="hw-footer">
+                    <div class="price">600<span> PLN Netto</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TERMINALE I KELNERZY -->
+    <div class="section-header">
+        <h2>Interfejsy i Terminale</h2>
+    </div>
+    <div class="hw-grid">
+        <!-- WAITER HUB -->
+        <div class="hw-card">
+            <div>
+                <div class="device-frame">
+                    <img src="../static/images/offer/kelner.png" alt="Tablet Kelnera">
+                </div>
+                <div class="hw-badge">PRO SERVICE</div>
+                <div class="hw-name">Terminal Kelnera Pro</div>
+                <p class="hw-desc">Wysoka jasność ekranu i pancerna bateria. Pełna mobilność obsługi z dostępem do mapy sali i statusu kuchni.</p>
+            </div>
+            <div>
+                <div class="hw-stats">
+                    <div class="stat-item"><span class="stat-val">10.1" IPS</span><span class="stat-label">Display</span></div>
+                    <div class="stat-item"><span class="stat-val">12h</span><span class="stat-label">Uptime</span></div>
+                </div>
+                <div class="hw-footer">
+                    <div class="price">900<span> PLN Netto</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QR SUITE -->
+        <div class="hw-card">
+            <div>
+                <div class="device-frame">
+                    <img src="../static/images/offer/QR_MENU.png" alt="Guest Mobile Interface">
+                </div>
+                <div class="hw-badge">GUEST INTERFACE</div>
+                <div class="hw-name">Zestaw QR Suite 2.0</div>
+                <p class="hw-desc">Twoi goście używają własnych flagowych urządzeń, by płacić Ci więcej. System PWA bez zbędnych instalacji i z menu AI.</p>
+            </div>
+            <div>
+                <div class="hw-stats">
+                    <div class="stat-item"><span class="stat-val">Any Device</span><span class="stat-label">Support</span></div>
+                    <div class="stat-item"><span class="stat-val">PWA</span><span class="stat-label">Tech</span></div>
+                </div>
+                <div class="hw-footer">
+                    <div class="price">300<span> PLN / mc</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KITCHEN & LOGISTICS -->
+    <div class="section-header">
+        <h2>Kuchnia i Logistyka</h2>
+    </div>
+    <div class="hw-grid">
+        <!-- KDS MON -->
+        <div class="hw-card">
+            <div>
+                <div class="device-frame">
+                    <img src="../static/images/offer/kds.png" alt="Kitchen Display System">
+                </div>
+                <div class="hw-badge">INDUSTRIAL</div>
+                <div class="hw-name">Monitor KDS Kitchen Master</div>
+                <p class="hw-desc">15-calowy, dotykowy monitor w stalowej obudowie. Odporny na parę, tłuszcz i trudne warunki kuchenne.</p>
+            </div>
+            <div>
+                <div class="hw-stats">
+                    <div class="stat-item"><span class="stat-val">IP65</span><span class="stat-label">Grade</span></div>
+                    <div class="stat-item"><span class="stat-val">Capacitive</span><span class="stat-label">Touch</span></div>
+                </div>
+                <div class="hw-footer">
+                    <div class="price">1 200<span> PLN Netto</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EXPO MON -->
+        <div class="hw-card">
+            <div>
+                <div class="device-frame">
+                    <img src="../static/images/offer/wydawka.png" alt="Expo Dashboard">
+                </div>
+                <div class="hw-badge">EXPO MASTER</div>
+                <div class="hw-name">Expo Command Center</div>
+                <p class="hw-desc">Monitor wydawki dba o to, by każda część zamówienia dotarła na stół w tym samym momencie. Pełna logistyka tacy.</p>
+            </div>
+            <div>
+                <div class="hw-stats">
+                    <div class="stat-item"><span class="stat-val">Multi-Order</span><span class="stat-label">View</span></div>
+                    <div class="stat-item"><span class="stat-val">Sync</span><span class="stat-label">Active</span></div>
+                </div>
+                <div class="hw-footer">
+                    <div class="price">1 200<span> PLN Netto</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA BANNER -->
+    <div class="cta-banner">
+        <h2>Nie płać za sprzęt z góry.</h2>
+        <p>Skorzystaj z programu HaaS (Hardware as a Service). Spłać sprzęt w 12 miesiącach abonamentu i ciesz się pełną gwarancją wymiany w 24h.</p>
+    </div>
+
+    <footer>
+        <p>© 2026 Zjedz.it POS Systems | Zaprojektowane by wygrywać.</p>
+        <p style="margin-top:10px;">Kontakt: <b>kontakt@zjedz.it</b></p>
+    </footer>
+</div>
+
+</body>
+</html>

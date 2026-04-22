@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ brand }} RCP - Rejestracja Czasu Pracy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white h-screen overflow-hidden flex flex-col font-sans">
+
+    <header class="bg-gray-800 p-4 shadow-md flex justify-between items-center border-b border-gray-700 shrink-0">
+        <h1 class="text-2xl font-black text-gray-100 flex items-center">
+            <span class="bg-indigo-600 text-white px-3 py-1 rounded mr-3 text-sm shadow">RCP</span>
+            {{ brand }} TERMINAL PRACOWNICZY
+        </h1>
+        <div class="text-gray-300 font-mono text-xl bg-black px-4 py-2 rounded border border-gray-700 shadow-inner" id="clock">00:00:00</div>
+    </header>
+
+    <div class="flex-1 flex flex-col items-center justify-center relative p-6">
+        <!-- ZEGAR / TŁO -->
+        <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+            <span class="text-[20rem]">🕒</span>
+        </div>
+
+        <div class="z-10 bg-gray-800/80 backdrop-blur-md p-10 rounded-2xl border border-gray-700 shadow-2xl text-center max-w-2xl w-full">
+            <div class="text-7xl mb-6 animate-bounce">💳</div>
+            <h2 class="text-4xl font-black mb-4 text-white uppercase tracking-tighter">ZBLIŻ KARTĘ NFC</h2>
+            <p class="text-gray-400 text-xl mb-8">Rozpocznij lub zakończ zmianę</p>
+            
+            <div id="lock-status-msg" class="text-yellow-500 font-bold text-xl hidden animate-pulse mb-8">⏳ Przetwarzanie...</div>
+            
+            <div class="border-t border-gray-700 pt-8 mt-4 text-left">
+                <p class="text-xs uppercase tracking-widest text-gray-500 mb-4 font-bold flex justify-between items-center">
+                    <span>Ostatnie Aktywności:</span>
+                    <button onclick="fetchActiveStaff()" class="text-indigo-400 hover:text-indigo-300">↻ Odśwież</button>
+                </p>
+                <div id="recent-activity-list" class="space-y-2 h-40 overflow-y-auto pr-2">
+                    <!-- Logi z WebSocket/API -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NFC FEEDBACK TOAST -->
+    <div id="nfc-toast" class="fixed top-24 left-1/2 -translate-x-1/2 z-[10000] pointer-events-none transition-all duration-300 opacity-0 transform -translate-y-4">
+        <div id="nfc-toast-inner" class="bg-blue-600 text-white px-8 py-4 rounded-full font-black shadow-2xl flex items-center gap-4 border-2 border-white/20 text-xl">
+            <span id="nfc-toast-icon" class="text-3xl">👋</span>
+            <span id="nfc-toast-text">Witaj Marcin!</span>
+        </div>
+    </div>
+
+    <script>
+        // --- ZEGAR ---
+        setInterval(() => { 
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('pl-PL'); 
+        }, 1000);
+
+        // --- NFC LOGIC ---
+        let nfcBuffer = "";
+        let nfcTimeout = null;
+
+        window.addEventListener("keydown", (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key === "Enter") {
+                if (nfcBuffer.length > 3) processNfcTag(nfcBuffer);
+                nfcBuffer = "";
+            } else if (/^[0-9a-zA-Z]$/.test(e.key)) {
+                nfcBuffer += e.key;
+                clearTimeout(nfcTimeout);
+                nfcTimeout = setTimeout(() => { nfcBuffer = ""; }, 400);
+            }
+        });
+
+        async function processNfcTag(id) {
+            document.getElementById('lock-status-msg').classList.remove('hidden');
+            const fd = new FormData(); fd.append('nfc_id', id);
+            try {
+                const res = await fetch('/auth/nfc_toggle', { method: 'POST', body: fd });
+                const data = await res.json();
+                document.getElementById('lock-status-msg').classList.add('hidden');
+                
+                if (data.success) {
+                    showNfcToast(data.staff_name, data.event === 'login');
+                    addActivityLog(data.staff_name, data.event);
+                } else {
+                    showNfcToast(data.error || "Błąd logowania", false, true);
+                }
+            } catch (e) { 
+                document.getElementById('lock-status-msg').classList.add('hidden');
+                showNfcToast("Błąd systemu", false, true); 
+            }
+        }
+
+        function showNfcToast(name, isLogin, isError=false) {
+            const toast = document.getElementById('nfc-toast');
+            const inner = document.getElementById('nfc-toast-inner');
+            const text = document.getElementById('nfc-toast-text');
+            const icon = document.getElementById('nfc-toast-icon');
+
+            if (isError) {
+                text.innerText = name;
+                icon.innerText = '❌';
+                inner.className = 'bg-red-900 text-red-100 px-8 py-4 rounded-full font-black shadow-2xl flex items-center gap-4 border-2 border-red-500 text-xl';
+            } else {
+                text.innerText = isLogin ? `Witaj ${name}!` : `Do widzenia ${name}!`;
+                icon.innerText = isLogin ? '👋' : '🏁';
+                inner.className = isLogin 
+                    ? 'bg-green-600 text-white px-8 py-4 rounded-full font-black shadow-2xl flex items-center gap-4 border-2 border-green-400 text-xl' 
+                    : 'bg-orange-600 text-white px-8 py-4 rounded-full font-black shadow-2xl flex items-center gap-4 border-2 border-orange-400 text-xl';
+            }
+            
+            toast.classList.remove('opacity-0', '-translate-y-4');
+            setTimeout(() => { toast.classList.add('opacity-0', '-translate-y-4'); }, 4000);
+        }
+
+        function addActivityLog(name, eventType) {
+            const list = document.getElementById('recent-activity-list');
+            const item = document.createElement('div');
+            const time = new Date().toLocaleTimeString('pl-PL', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            
+            const isLogin = eventType === 'login';
+            const colorClass = isLogin ? 'text-green-400' : 'text-orange-400';
+            const icon = isLogin ? '➡️ WEJŚCIE' : '⬅️ WYJŚCIE';
+            
+            item.className = 'flex justify-between items-center bg-gray-900/50 p-3 rounded border border-gray-700/50 shadow-sm';
+            item.innerHTML = `
+                <span class="font-mono text-gray-500 text-sm">${time}</span>
+                <span class="font-bold text-gray-200 text-lg">${name}</span>
+                <span class="${colorClass} font-black text-sm uppercase tracking-wider">${icon}</span>
+            `;
+            
+            list.prepend(item);
+            if(list.children.length > 20) list.removeChild(list.lastChild);
+        }
+
+        async function fetchActiveStaff() {
+            try {
+                const res = await fetch('/api/active_staff');
+                const data = await res.json();
+                const active = data.staff || [];
+                // Update specific elements if needed
+            } catch (e) {}
+        }
+
+        // --- WEBSOCKET ---
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+            ws.onmessage = function(event) {
+                try { 
+                    const data = JSON.parse(event.data); 
+                    if (data.type === 'nfc_auth') {
+                        // Remote auth event (someone logged in from another terminal)
+                        addActivityLog(data.staff_name, data.status);
+                    }
+                } catch(e){}
+            };
+            ws.onclose = () => setTimeout(connectWebSocket, 3000);
+        }
+
+        window.onload = () => {
+            fetchActiveStaff();
+            connectWebSocket();
+        };
+    </script>
+</body>
+</html>

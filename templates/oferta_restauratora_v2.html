@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zjedz.it POS — Dominacja w Gastronomii | Oferta Biznesowa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #f5a623;
+            --primary-light: #ffd166;
+            --primary-dark: #c47d0a;
+            --bg: #05060a;
+            --bg-card: #0e111a;
+            --bg-alt: #121520;
+            --text: #ffffff;
+            --text-muted: #858b98;
+            --green: #22c55e;
+            --border: rgba(255,255,255,0.08);
+            --gradient: linear-gradient(135deg, #f5a623 0%, #ff8c00 100%);
+            --radius: 48px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+
+        /* ─── HERO ─── */
+        header { padding: 140px 0 100px; text-align: center; position: relative; }
+        header::before {
+            content: ''; position: absolute; top: -150px; left: 50%; transform: translateX(-50%);
+            width: 1000px; height: 500px; background: radial-gradient(circle, rgba(245,166,35,0.12), transparent 70%);
+            z-index: -1;
+        }
+        .logo { font-size: 2.4em; font-weight: 900; color: var(--primary); margin-bottom: 30px; letter-spacing: 3px; }
+        .logo span { color: #fff; }
+        h1 { font-size: clamp(3.5em, 11vw, 6em); font-weight: 950; letter-spacing: -5px; line-height: 0.8; margin-bottom: 40px; }
+        h1 .acc { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-sub { font-size: 1.7em; color: var(--text-muted); max-width: 900px; margin: 0 auto; line-height: 1.3; font-weight: 300; }
+
+        /* ─── FOUR SCREENS SHOWCASE ─── */
+        .showcase-section { margin: 60px 0 120px; }
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .showcase-item { text-align: center; }
+
+        .showcase-device {
+            background: #0a0c12;
+            border-radius: 20px;
+            padding: 12px;
+            border: 2px solid #1a1e2a;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+            margin-bottom: 20px;
+            transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .showcase-item:hover .showcase-device { border-color: var(--primary); transform: translateY(-10px); box-shadow: 0 40px 80px rgba(245,166,35,0.15); }
+
+        /* Phone mockup for QR Menu */
+        .showcase-device.phone {
+            width: 200px;
+            margin: 0 auto 20px;
+            border-radius: 30px;
+            padding: 15px 10px;
+        }
+        .showcase-device.phone::before {
+            content: '';
+            display: block;
+            width: 60px; height: 6px;
+            background: #1a1e2a;
+            border-radius: 3px;
+            margin: 0 auto 10px;
+        }
+
+        /* Monitor mockup for KDS/Wydawka */
+        .showcase-device.monitor {
+            border-radius: 12px;
+            padding: 8px 8px 25px;
+        }
+        .showcase-device.monitor::after {
+            content: '';
+            display: block;
+            width: 40px; height: 4px;
+            background: #1a1e2a;
+            border-radius: 2px;
+            margin: 8px auto 0;
+        }
+
+        /* Tablet mockup for Kelner */
+        .showcase-device.tablet {
+            border-radius: 16px;
+            padding: 10px;
+        }
+
+        .showcase-device .screen {
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+        .showcase-device.phone .screen { border-radius: 14px; }
+
+        .showcase-device .screen img {
+            width: 100%;
+            display: block;
+            transition: 0.5s;
+        }
+        .showcase-item:hover .showcase-device .screen img { transform: scale(1.05); }
+
+        .showcase-step {
+            display: inline-block;
+            background: var(--primary);
+            color: #000;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            font-weight: 950;
+            font-size: 1.1em;
+            line-height: 36px;
+            margin-bottom: 10px;
+        }
+        .showcase-label { font-size: 1.3em; font-weight: 800; color: #fff; margin-bottom: 5px; }
+        .showcase-desc { font-size: 0.85em; color: var(--text-muted); }
+
+        /* ─── THREE PILLARS ─── */
+        .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-bottom: 120px; }
+        .pillar-card { background: var(--bg-card); padding: 50px; border-radius: var(--radius); border: 1px solid var(--border); text-align: center; }
+        .pillar-icon { font-size: 3em; margin-bottom: 20px; display: block; }
+        .pillar-card h3 { font-size: 1.8em; font-weight: 900; margin-bottom: 15px; color: var(--primary); }
+        .pillar-card p { color: var(--text-muted); font-size: 1em; }
+
+        /* ─── CINEMATIC FLOW ─── */
+        .section-title { text-align: center; margin-bottom: 80px; font-size: 3.5em; font-weight: 950; letter-spacing: -3px; }
+
+        .flow-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; margin-bottom: 120px;
+        }
+        .flow-row.reverse { direction: rtl; }
+        .flow-row.reverse > div { direction: ltr; }
+
+        .flow-visual { position: relative; }
+        .device-main {
+            border-radius: 24px; border: 12px solid #1c1f26; overflow: hidden;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6); background: #000;
+        }
+        .device-main img { width: 100%; display: block; filter: saturate(1.1); transition: 0.6s cubic-bezier(0.19, 1, 0.22, 1); }
+        .flow-row:hover .device-main img { transform: scale(1.03); }
+
+        .flow-content h4 { font-size: 1em; color: var(--primary); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; }
+        .flow-content h3 { font-size: 3.2em; font-weight: 950; line-height: 0.95; margin-bottom: 30px; letter-spacing: -2px; }
+        .flow-content p { font-size: 1.3em; color: var(--text-muted); margin-bottom: 40px; }
+        
+        .feature-bullets { list-style: none; display: flex; flex-wrap: wrap; gap: 15px; }
+        .feature-bullets li { background: rgba(255,255,255,0.04); padding: 8px 18px; border-radius: 12px; font-size: 0.95em; font-weight: 600; border: 1px solid var(--border); }
+
+        /* ─── UPSELLING ─── */
+        .upsell-pro {
+            background: linear-gradient(135deg, rgba(245,166,35,0.14), rgba(0,0,0,0));
+            border: 2px solid var(--primary);
+            border-radius: var(--radius);
+            padding: 80px;
+            text-align: center;
+            margin: 140px 0;
+        }
+        .upsell-pro h2 { font-size: 4em; font-weight: 950; color: var(--primary); margin-bottom: 25px; letter-spacing: -3px; }
+        .upsell-pro p { font-size: 1.6em; max-width: 900px; margin: 0 auto; color: var(--text-muted); }
+
+        /* ─── PRICING ─── */
+        .pricing-wrap { display: grid; grid-template-columns: 1fr 1.25fr; gap: 40px; margin: 100px 0; align-items: start; }
+        .price-box {
+            background: var(--bg-card); border-radius: var(--radius); padding: 80px; border: 2px solid var(--border);
+            position: relative; transition: 0.5s;
+        }
+        .price-box.pro {
+            border-color: var(--primary); transform: scale(1.05);
+            background: radial-gradient(circle at top right, rgba(245,166,35,0.06), transparent);
+            box-shadow: 0 60px 120px rgba(0,0,0,0.85);
+        }
+        .best-value {
+            position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
+            background: var(--gradient); color: #000; padding: 8px 40px; border-radius: 60px; font-weight: 950; font-size: 1em;
+        }
+        .plan-price { font-size: 6em; font-weight: 950; color: var(--primary); letter-spacing: -5px; line-height: 0.9; }
+        .plan-price span { font-size: 0.25em; color: var(--text-muted); font-weight: 400; letter-spacing: 0; margin-left: -5px; }
+        .haas-extra { color: var(--green); font-weight: 900; font-size: 1.55em; margin: 30px 0 50px; display: block; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 20px; }
+        
+        .plan-feats { list-style: none; }
+        .plan-feats li { padding: 18px 0; display: flex; gap: 20px; font-size: 1.15em; font-weight: 600; }
+        .plan-feats li::before { content: '✓'; color: var(--green); font-weight: 950; }
+        .plan-feats li.highlight { color: #fff; font-weight: 900; }
+
+        footer { padding: 120px 0 50px; text-align: center; border-top: 1px solid var(--border); opacity: 0.3; }
+
+        @media (max-width: 1100px) {
+            .showcase-grid { grid-template-columns: repeat(2, 1fr); gap: 40px; }
+            .flow-row, .flow-row.reverse, .pricing-wrap, .pillars { grid-template-columns: 1fr; }
+            .price-box.pro { transform: scale(1); }
+        }
+        @media (max-width: 600px) {
+            .showcase-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="logo">zjedz<span>.it</span> POS</div>
+        <h1>Przejmij kontrolę <br>nad <span class="acc">zyskiem</span></h1>
+        <p class="hero-sub">Najszybsza architektura POS w Polsce. Serwer lokalny, zero lagów, zero przestojów i AI Gemini, które naprawdę zarabia dla Ciebie.</p>
+    </header>
+
+    <!-- ═══════ FOUR SCREENS SHOWCASE ═══════ -->
+    <section class="showcase-section">
+        <div class="showcase-grid">
+            <!-- 1: QR MENU — Phone -->
+            <div class="showcase-item">
+                <div class="showcase-device phone">
+                    <div class="screen">
+                        <img src="../static/images/offer/QR_MENU.png" alt="Menu QR">
+                    </div>
+                </div>
+                <div class="showcase-step">1</div>
+                <div class="showcase-label">Menu QR 2.0</div>
+                <div class="showcase-desc">Gość zamawia sam przez telefon</div>
+            </div>
+
+            <!-- 2: KDS — Monitor -->
+            <div class="showcase-item">
+                <div class="showcase-device monitor">
+                    <div class="screen">
+                        <img src="../static/images/offer/kds.png" alt="System KDS">
+                    </div>
+                </div>
+                <div class="showcase-step">2</div>
+                <div class="showcase-label">Kuchnia (KDS)</div>
+                <div class="showcase-desc">Kucharz widzi bony natychmiast</div>
+            </div>
+
+            <!-- 3: WYDAWKA — Monitor -->
+            <div class="showcase-item">
+                <div class="showcase-device monitor">
+                    <div class="screen">
+                        <img src="../static/images/offer/wydawka.png" alt="Wydawka Expo">
+                    </div>
+                </div>
+                <div class="showcase-step">3</div>
+                <div class="showcase-label">Wydawka</div>
+                <div class="showcase-desc">Kompletowanie zamówień</div>
+            </div>
+
+            <!-- 4: KELNER — Tablet -->
+            <div class="showcase-item">
+                <div class="showcase-device tablet">
+                    <div class="screen">
+                        <img src="../static/images/offer/kelner.png" alt="Panel Kelnera">
+                    </div>
+                </div>
+                <div class="showcase-step">4</div>
+                <div class="showcase-label">Kelner / POS</div>
+                <div class="showcase-desc">Mapa sali i rachunki w kieszeni</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════ THREE PILLARS ═══════ -->
+    <section class="pillars">
+        <div class="pillar-card">
+            <span class="pillar-icon">💎</span>
+            <h3>Sovereign Speed</h3>
+            <p>Serwer Edge RPi 5 z NVMe. System szybszy niż chmura, bo działa lokalnie w Twoim budynku.</p>
+        </div>
+        <div class="pillar-card">
+            <span class="pillar-icon">🤖</span>
+            <h3>Profit Intelligence</h3>
+            <p>AI Gemini nie tylko raportuje — aktywnie sugeruje zmiany w menu, które zwiększają Twoją marżowość.</p>
+        </div>
+        <div class="pillar-card">
+            <span class="pillar-icon">🔌</span>
+            <h3>Full Resilience</h3>
+            <p>Lokalna baza MongoDB gwarantuje 100% sprawności nawet przy całkowitym braku internetu.</p>
+        </div>
+    </section>
+
+    <!-- ═══════ DEEP DIVE: FRONT OFFICE ═══════ -->
+    <section class="flow-section">
+        <h2 class="section-title">Głębsze Spojrzenie</h2>
+
+        <div class="flow-row">
+            <div class="flow-visual">
+                <div class="device-main">
+                    <img src="../static/images/offer/qr menu and waiter.png" alt="Guest & Waiter Interface">
+                </div>
+            </div>
+            <div class="flow-content">
+                <h4>Front-Office</h4>
+                <h3>Gość & Kelner <br>w Pełnej Synergii</h3>
+                <p>Niezależnie od tego, czy gość zamawia sam, czy obsługuje go kelner — system działa jako jeden organizm. Baza aktualizuje się w milisekundach.</p>
+                <ul class="feature-bullets">
+                    <li>Upselling AI</li>
+                    <li>Szybsze rachunki</li>
+                    <li>Mapa sali live</li>
+                    <li>Wezwanie obsługi</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="flow-row reverse">
+            <div class="flow-visual">
+                <div class="device-main">
+                    <img src="../static/images/offer/kds i wydawka.png" alt="KDS & Expo">
+                </div>
+            </div>
+            <div class="flow-content">
+                <h4>Back-Office</h4>
+                <h3>Kuchnia & Wydawka <br>bez Pomyłek</h3>
+                <p>Kucharz widzi tylko to, co musi przygotować. Wydawca widzi cały obraz. Gwarantujemy, że każde danie wyjdzie gorące i kompletne.</p>
+                <ul class="feature-bullets">
+                    <li>Timer KDS</li>
+                    <li>Expo Dashboard</li>
+                    <li>Brak bonowników</li>
+                    <li>Zero pomyłek</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════ UPSELLING ═══════ -->
+    <section class="upsell-pro">
+        <h2>Automatyczny Upselling PRO</h2>
+        <p>System inteligentnie sugeruje gościom dodatki, drinki i desery w idealnym momencie. To czysta marża, która finansuje Twój abonament od pierwszych dni użytkowania.</p>
+    </section>
+
+    <!-- ═══════ PRICING ═══════ -->
+    <section id="cennik">
+        <h2 class="section-title">Modele Partnerstwa</h2>
+        <div class="pricing-wrap">
+            <div class="price-box">
+                <div class="plan-price">300<span> PLN / mc netto</span></div>
+                <span class="haas-extra">+70 PLN HaaS Hardware</span>
+                <ul class="plan-feats">
+                    <li>Terminal Edge RPi 5</li>
+                    <li>0,5h Konsultacji Biznesowej</li>
+                    <li>Full Menu QR & System KDS</li>
+                    <li>Praca w trybie Offline</li>
+                    <li>Raporty Sprzedaży Online</li>
+                </ul>
+            </div>
+
+            <div class="price-box pro">
+                <div class="best-value">⭐ REKOMENDOWANY</div>
+                <div class="plan-price">500<span> PLN / mc netto</span></div>
+                <span class="haas-extra">+70 PLN HaaS Hardware</span>
+                <ul class="plan-feats">
+                    <li class="highlight">Wszystko w Basic + dodatkowo:</li>
+                    <li class="highlight">Automatyczny Upselling PRO</li>
+                    <li class="highlight">AI Storytelling Narrative</li>
+                    <li class="highlight">AI Business Analyst (Gemini)</li>
+                    <li class="highlight">1h Dedykowanego Doradztwa / mc</li>
+                    <li>Gwarancja Wymiany HW (24h)</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>© 2026 Zjedz.it POS Systems — Technologia, która nie bierze jeńców.</p>
+        <p style="margin-top:10px;">Kontakt: <b>kontakt@zjedz.it</b> | Oferta ważna 14 dni.</p>
+    </footer>
+</div>
+
+</body>
+</html>

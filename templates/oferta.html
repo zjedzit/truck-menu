@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zjedz.it POS — Nowoczesny System dla Gastronomii | Oferta</title>
+    <meta name="description" content="Zjedz.it POS to inteligentny, chmurowy system Point-of-Sale dla restauracji, food trucków i bistro. QR zamówienia, AI, KDS, drukarka fiskalna — wszystko w jednym.">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #f5a623;
+            --gold-light: #ffd166;
+            --gold-dark: #c47d0a;
+            --bg: #08090d;
+            --bg2: #0e1018;
+            --card: #12151f;
+            --card2: #1a1e2e;
+            --border: rgba(245,166,35,0.18);
+            --border2: rgba(255,255,255,0.07);
+            --green: #22c55e;
+            --blue: #3b82f6;
+            --purple: #a855f7;
+            --red: #ef4444;
+            --text: #e8eaf0;
+            --text-muted: #7a7e8e;
+            --radius: 20px;
+            --radius-sm: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ─── SCROLLBAR ─── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 10px; }
+
+        /* ─── NAV ─── */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 6%; height: 70px;
+            background: rgba(8,9,13,0.85);
+            backdrop-filter: blur(18px);
+            border-bottom: 1px solid var(--border2);
+        }
+        .nav-logo {
+            font-size: 1.5em; font-weight: 900; color: var(--gold);
+            letter-spacing: -0.5px;
+        }
+        .nav-logo span { color: var(--text); }
+        .nav-links { display: flex; gap: 30px; list-style: none; }
+        .nav-links a {
+            color: var(--text-muted); text-decoration: none; font-size: 0.9em;
+            font-weight: 500; transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--gold); }
+        .nav-cta {
+            background: var(--gold); color: #000; padding: 9px 22px;
+            border-radius: 50px; font-weight: 700; font-size: 0.9em;
+            text-decoration: none; transition: 0.2s; white-space: nowrap;
+        }
+        .nav-cta:hover { background: var(--gold-light); transform: scale(1.04); }
+
+        /* ─── HERO ─── */
+        .hero {
+            position: relative; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 120px 6% 80px;
+            overflow: hidden;
+        }
+        .hero-bg {
+            position: absolute; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% -10%, rgba(245,166,35,0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 40% at 15% 80%, rgba(59,130,246,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 40% at 85% 80%, rgba(168,85,247,0.08) 0%, transparent 60%);
+        }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(245,166,35,0.12); border: 1px solid var(--border);
+            color: var(--gold); padding: 6px 18px; border-radius: 50px;
+            font-size: 0.82em; font-weight: 600; letter-spacing: 0.5px;
+            margin-bottom: 28px; position: relative; z-index: 1;
+        }
+        .hero-badge .dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+
+        h1 {
+            font-size: clamp(2.4em, 6vw, 5em); font-weight: 900;
+            line-height: 1.08; letter-spacing: -2px;
+            position: relative; z-index: 1; max-width: 900px;
+        }
+        h1 .highlight {
+            background: linear-gradient(135deg, var(--gold), #ff8c00, var(--gold-light));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-sub {
+            margin: 24px auto 0; max-width: 680px; font-size: 1.15em;
+            color: var(--text-muted); font-weight: 400; position: relative; z-index: 1;
+        }
+        .hero-actions {
+            margin-top: 44px; display: flex; gap: 16px; flex-wrap: wrap;
+            justify-content: center; position: relative; z-index: 1;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold), #e8960f);
+            color: #000; padding: 14px 34px; border-radius: 50px;
+            font-size: 1.05em; font-weight: 800; text-decoration: none;
+            transition: 0.25s; box-shadow: 0 8px 30px rgba(245,166,35,0.35);
+        }
+        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 14px 40px rgba(245,166,35,0.5); }
+        .btn-secondary {
+            background: transparent; color: var(--text);
+            border: 1px solid var(--border2); padding: 14px 34px;
+            border-radius: 50px; font-size: 1.05em; font-weight: 600;
+            text-decoration: none; transition: 0.25s;
+        }
+        .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+
+        .hero-stats {
+            margin-top: 70px; display: flex; gap: 50px; flex-wrap: wrap;
+            justify-content: center; position: relative; z-index: 1;
+        }
+        .stat { text-align: center; }
+        .stat-num { font-size: 2.2em; font-weight: 900; color: var(--gold); }
+        .stat-label { font-size: 0.82em; color: var(--text-muted); margin-top: 2px; }
+
+        /* ─── SECTION SHARED ─── */
+        section { padding: 100px 6%; max-width: 1200px; margin: 0 auto; }
+        .section-tag {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(245,166,35,0.1); border: 1px solid var(--border);
+            color: var(--gold); padding: 4px 14px; border-radius: 50px;
+            font-size: 0.78em; font-weight: 700; letter-spacing: 1px;
+            text-transform: uppercase; margin-bottom: 18px;
+        }
+        h2 {
+            font-size: clamp(1.9em, 4vw, 3em); font-weight: 800;
+            letter-spacing: -1px; line-height: 1.12;
+        }
+        h2 .acc { color: var(--gold); }
+        .section-sub { color: var(--text-muted); font-size: 1.05em; margin-top: 14px; max-width: 640px; }
+
+        /* ─── MODULES ─── */
+        .modules-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+            gap: 24px; margin-top: 54px;
+        }
+        .module-card {
+            background: var(--card); border: 1px solid var(--border2);
+            border-radius: var(--radius); padding: 32px;
+            transition: 0.3s; position: relative; overflow: hidden;
+        }
+        .module-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent, var(--gold)), transparent);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .module-card:hover { transform: translateY(-6px); border-color: var(--border); }
+        .module-card:hover::before { opacity: 1; }
+        .module-icon { font-size: 2.2em; margin-bottom: 16px; }
+        .module-title { font-size: 1.2em; font-weight: 700; margin-bottom: 8px; }
+        .module-desc { font-size: 0.9em; color: var(--text-muted); line-height: 1.7; }
+        .module-features { margin-top: 18px; display: flex; flex-direction: column; gap: 7px; }
+        .mf-item { display: flex; align-items: center; gap: 10px; font-size: 0.85em; color: var(--text-muted); }
+        .mf-item::before { content: '✓'; color: var(--green); font-weight: 800; flex-shrink: 0; }
+
+        /* ─── HOW IT WORKS ─── */
+        .steps { display: flex; flex-direction: column; gap: 0; margin-top: 54px; position: relative; }
+        .steps::before {
+            content: ''; position: absolute; left: 35px; top: 70px; bottom: 70px;
+            width: 2px; background: linear-gradient(to bottom, var(--gold), transparent);
+        }
+        .step { display: flex; gap: 30px; align-items: flex-start; padding: 30px 0; }
+        .step-num {
+            width: 70px; height: 70px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6em; font-weight: 900; color: #000;
+            background: linear-gradient(135deg, var(--gold), #e8960f);
+            box-shadow: 0 6px 24px rgba(245,166,35,0.35);
+            position: relative; z-index: 1;
+        }
+        .step-content { padding-top: 12px; }
+        .step-title { font-size: 1.2em; font-weight: 700; margin-bottom: 6px; }
+        .step-desc { color: var(--text-muted); font-size: 0.95em; line-height: 1.7; }
+
+        /* ─── TECH STACK ─── */
+        .tech-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px; margin-top: 54px;
+        }
+        .tech-card {
+            background: var(--card2); border: 1px solid var(--border2);
+            border-radius: var(--radius-sm); padding: 24px;
+            display: flex; align-items: flex-start; gap: 16px;
+            transition: 0.25s;
+        }
+        .tech-card:hover { border-color: var(--border); transform: scale(1.02); }
+        .tech-icon { font-size: 1.8em; }
+        .tech-name { font-weight: 700; font-size: 0.95em; }
+        .tech-desc { font-size: 0.8em; color: var(--text-muted); margin-top: 3px; }
+
+        /* ─── PRICING ─── */
+        .pricing-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px; margin-top: 54px; align-items: start;
+        }
+        .price-card {
+            background: var(--card); border: 1px solid var(--border2);
+            border-radius: var(--radius); padding: 36px;
+            transition: 0.3s; position: relative;
+        }
+        .price-card.featured {
+            border-color: var(--gold);
+            background: linear-gradient(160deg, rgba(245,166,35,0.08), var(--card));
+            transform: scale(1.03);
+        }
+        .price-card.featured::before {
+            content: '🏆 POLECANY'; position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--gold), #e8960f); color: #000;
+            padding: 3px 18px; border-radius: 50px; font-size: 0.75em; font-weight: 800;
+            letter-spacing: 0.5px; white-space: nowrap;
+        }
+        .price-name { font-size: 1.1em; font-weight: 700; color: var(--text-muted); margin-bottom: 10px; }
+        .price-val { font-size: 2.6em; font-weight: 900; color: var(--gold); line-height: 1; }
+        .price-period { font-size: 0.85em; color: var(--text-muted); margin-bottom: 24px; }
+        .price-divider { border: none; border-top: 1px solid var(--border2); margin: 24px 0; }
+        .price-feature { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 0.9em; }
+        .price-feature.yes::before { content: '✓'; color: var(--green); font-weight: 800; }
+        .price-feature.no::before { content: '×'; color: var(--text-muted); font-weight: 800; }
+        .price-feature.no { color: var(--text-muted); }
+        .price-btn {
+            display: block; text-align: center; margin-top: 28px;
+            padding: 13px; border-radius: 50px; font-weight: 700; font-size: 0.95em;
+            text-decoration: none; transition: 0.2s; cursor: pointer; border: none;
+        }
+        .price-btn.gold { background: linear-gradient(135deg, var(--gold), #e8960f); color: #000; }
+        .price-btn.outline { background: transparent; border: 1px solid var(--border2); color: var(--text); }
+        .price-btn:hover { transform: scale(1.03); }
+
+        /* ─── AI FEATURE BLOCK ─── */
+        .ai-block {
+            background: linear-gradient(135deg, rgba(168,85,247,0.08), rgba(59,130,246,0.08));
+            border: 1px solid rgba(168,85,247,0.25); border-radius: var(--radius);
+            padding: 60px; margin-top: 54px; position: relative; overflow: hidden;
+        }
+        .ai-block::before {
+            content: ''; position: absolute; top: -80px; right: -80px;
+            width: 300px; height: 300px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(168,85,247,0.2), transparent 70%);
+        }
+        .ai-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.4);
+            color: #c084fc; padding: 4px 14px; border-radius: 50px;
+            font-size: 0.78em; font-weight: 700; letter-spacing: 1px;
+            text-transform: uppercase; margin-bottom: 20px;
+        }
+        .ai-features-list { display: flex; flex-direction: column; gap: 14px; margin-top: 28px; }
+        .ai-feat {
+            display: flex; align-items: flex-start; gap: 14px;
+            background: rgba(255,255,255,0.04); border-radius: var(--radius-sm); padding: 16px 20px;
+        }
+        .ai-feat .emoji { font-size: 1.5em; flex-shrink: 0; }
+        .ai-feat h4 { font-weight: 700; margin-bottom: 3px; }
+        .ai-feat p { font-size: 0.88em; color: var(--text-muted); }
+
+        /* ─── HARDWARE ─── */
+        .hw-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 30px;
+            margin-top: 54px;
+        }
+        .hw-card {
+            background: var(--card); border: 1px solid var(--border2);
+            border-radius: var(--radius); padding: 32px;
+        }
+        .hw-card h3 { font-size: 1.2em; font-weight: 700; margin-bottom: 10px; }
+        .hw-card p { font-size: 0.9em; color: var(--text-muted); margin-bottom: 20px; }
+        .hw-price { font-size: 2em; font-weight: 900; color: var(--gold); }
+        .hw-note { font-size: 0.8em; color: var(--text-muted); margin-top: 3px; }
+
+        /* ─── ROADMAP ─── */
+        .roadmap-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px; margin-top: 54px;
+        }
+        .roadmap-card {
+            background: var(--card2); border: 1px solid var(--border2);
+            border-radius: var(--radius-sm); padding: 24px;
+        }
+        .roadmap-card .emoji { font-size: 1.8em; margin-bottom: 12px; }
+        .roadmap-card h4 { font-weight: 700; margin-bottom: 6px; }
+        .roadmap-card p { font-size: 0.85em; color: var(--text-muted); }
+
+        /* ─── CONTACT / CTA ─── */
+        .cta-section {
+            text-align: center; padding: 120px 6%;
+            background: linear-gradient(180deg, transparent, rgba(245,166,35,0.04));
+        }
+        .cta-section h2 { font-size: clamp(2em, 5vw, 3.5em); }
+        .cta-box {
+            display: inline-flex; flex-direction: column; align-items: center; gap: 14px;
+            background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 50px 60px; margin-top: 48px;
+        }
+        .contact-row { display: flex; align-items: center; gap: 12px; font-size: 1.05em; }
+        .contact-icon { font-size: 1.3em; }
+        .contact-val { font-weight: 600; }
+        .contact-val a { color: var(--gold); text-decoration: none; }
+        .contact-val a:hover { text-decoration: underline; }
+
+        /* ─── FOOTER ─── */
+        footer {
+            text-align: center; padding: 40px 6%;
+            border-top: 1px solid var(--border2); font-size: 0.85em;
+            color: var(--text-muted);
+        }
+        footer a { color: var(--gold); text-decoration: none; }
+
+        /* ─── GLOW DIVIDER ─── */
+        .glow-divider {
+            width: 100%; height: 1px; max-width: 1200px; margin: 0 auto;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            opacity: 0.3;
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 768px) {
+            nav { padding: 0 5%; }
+            .nav-links { display: none; }
+            section { padding: 70px 5%; }
+            .hero { padding: 100px 5% 60px; }
+            .hw-grid { grid-template-columns: 1fr; }
+            .pricing-grid { grid-template-columns: 1fr; }
+            .price-card.featured { transform: none; }
+            .ai-block { padding: 36px 24px; }
+            .cta-box { padding: 36px 24px; }
+            .steps::before { display: none; }
+        }
+
+        /* ─── SCROLL REVEAL ANIMATION ─── */
+        .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        /* ─── FLOATING PARTICLES ─── */
+        .particle {
+            position: fixed; width: 4px; height: 4px; border-radius: 50%;
+            background: var(--gold); opacity: 0; pointer-events: none;
+            animation: float-up 8s ease-in infinite;
+        }
+        @keyframes float-up {
+            0% { opacity: 0; transform: translateY(100vh) scale(0); }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.3; }
+            100% { opacity: 0; transform: translateY(-100px) scale(0.5); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAV -->
+    <nav>
+        <div class="nav-logo">zjedz<span>.it</span> POS</div>
+        <ul class="nav-links">
+            <li><a href="#funkcje">Funkcje</a></li>
+            <li><a href="#jak-dziala">Jak działa</a></li>
+            <li><a href="#cennik">Cennik</a></li>
+            <li><a href="#ai">AI</a></li>
+            <li><a href="#kontakt">Kontakt</a></li>
+        </ul>
+        <a href="#kontakt" class="nav-cta">Zamów demo →</a>
+    </nav>
+
+    <!-- HERO -->
+    <div class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-badge">
+            <div class="dot"></div>
+            System aktywny · Cloud Run · Google Cloud
+        </div>
+        <h1>
+            Twoja restauracja<br>
+            na <span class="highlight">następnym poziomie</span>
+        </h1>
+        <p class="hero-sub">
+            Inteligentny system POS oparty na chmurze — zamawianie przez QR, kuchnia w czasie rzeczywistym, AI storytelling i drukarka fiskalna. Bez kas-klocy, bez przestojów.
+        </p>
+        <div class="hero-actions">
+            <a href="#cennik" class="btn-primary">📋 Zobacz ofertę</a>
+            <a href="#jak-dziala" class="btn-secondary">Jak to działa?</a>
+        </div>
+        <div class="hero-stats">
+            <div class="stat">
+                <div class="stat-num">6</div>
+                <div class="stat-label">Modułów systemu</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">∞</div>
+                <div class="stat-label">Stolików & terminali</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">AI</div>
+                <div class="stat-label">Gemini 2.5 Flash</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">⚡</div>
+                <div class="stat-label">Real-time WebSocket</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glow-divider"></div>
+
+    <!-- MODUŁY -->
+    <section id="funkcje">
+        <div class="reveal">
+            <div class="section-tag">🧩 Moduły systemu</div>
+            <h2>Wszystko, czego potrzebuje <span class="acc">nowoczesna gastronomia</span></h2>
+            <p class="section-sub">Sześć zintegrowanych modułów działających w czasie rzeczywistym przez WebSocket — od klienta przy stoliku po właściciela na telefonie.</p>
+        </div>
+
+        <div class="modules-grid">
+            <div class="module-card reveal" style="--accent:#f5a623">
+                <div class="module-icon">🍔</div>
+                <div class="module-title">Menu Klienta (QR)</div>
+                <div class="module-desc">Gość skanuje kod QR przy stoliku i składa zamówienie bezpośrednio ze swojego telefonu — zero czekania na kelnera.</div>
+                <div class="module-features">
+                    <div class="mf-item">Sesja przypisana do stolika</div>
+                    <div class="mf-item">Wezwanie kelnera / prośba o rachunek</div>
+                    <div class="mf-item">AI storytelling przy każdym daniu</div>
+                    <div class="mf-item">Ocena zamówień po posiłku</div>
+                </div>
+            </div>
+
+            <div class="module-card reveal" style="--accent:#22c55e">
+                <div class="module-icon">🧾</div>
+                <div class="module-title">Stacja Kelnera (POS)</div>
+                <div class="module-desc">Klasyczny punkt sprzedaży z mapą sali, podglądem zamówień i obsługą płatności — optimized pod tablet lub telefon.</div>
+                <div class="module-features">
+                    <div class="mf-item">Logowanie PIN-em pracownika</div>
+                    <div class="mf-item">Dynamiczna mapa stolików</div>
+                    <div class="mf-item">Podgląd zamówień na żywo</div>
+                    <div class="mf-item">Zamknięcie rachunku → paragon do RPi</div>
+                </div>
+            </div>
+
+            <div class="module-card reveal" style="--accent:#3b82f6">
+                <div class="module-icon">👨‍🍳</div>
+                <div class="module-title">KDS — Kuchnia</div>
+                <div class="module-desc">Kitchen Display System — bony w kolejce na ekranie kuchennym. Czytelny, szybki, timer na każdym zamówieniu.</div>
+                <div class="module-features">
+                    <div class="mf-item">Lista bonów: nowe → przygotowanie → gotowe</div>
+                    <div class="mf-item">Timer od złożenia zamówienia</div>
+                    <div class="mf-item">Broadcast statusów do wszystkich paneli</div>
+                    <div class="mf-item">Logowanie hasłem lub PIN-em</div>
+                </div>
+            </div>
+
+            <div class="module-card reveal" style="--accent:#a855f7">
+                <div class="module-icon">📦</div>
+                <div class="module-title">Wydawka (Expo)</div>
+                <div class="module-desc">Widok zbiorczy dla osoby wydającej jedzenie — widzi tylko kompletne zamówienia gotowe do podania.</div>
+                <div class="module-features">
+                    <div class="mf-item">Tylko bony ze wszystkimi pozycjami = ready</div>
+                    <div class="mf-item">Wydanie → zamknięcie zamówienia</div>
+                    <div class="mf-item">Podgląd szczegółów bonu</div>
+                    <div class="mf-item">Jasny interfejs na duże ekrany</div>
+                </div>
+            </div>
+
+            <div class="module-card reveal" style="--accent:#ef4444">
+                <div class="module-icon">⚙️</div>
+                <div class="module-title">Admin Panel (Boss)</div>
+                <div class="module-desc">Pełna kontrola restauracji: finansowa, personalna i techniczna — wszystko w jednym miejscu.</div>
+                <div class="module-features">
+                    <div class="mf-item">Dashboard dzienny z utargiem</div>
+                    <div class="mf-item">Edytor menu i zdjęć produktów</div>
+                    <div class="mf-item">Drag & Drop mapa sali</div>
+                    <div class="mf-item">Zarządzanie pracownikami i PIN-ami</div>
+                    <div class="mf-item">Raport AI (Gemini) na koniec dnia</div>
+                </div>
+            </div>
+
+            <div class="module-card reveal" style="--accent:#f5a623">
+                <div class="module-icon">🖨️</div>
+                <div class="module-title">RPi Gateway + Drukarka</div>
+                <div class="module-desc">Raspberry Pi jako lokalny terminal — odbiera paragony przez WebSocket i drukuje na drukarce fiskalnej Elzab Zeta.</div>
+                <div class="module-features">
+                    <div class="mf-item">Podłączenie przez WebSocket (wss://)</div>
+                    <div class="mf-item">Druk paragonu ESC/POS</div>
+                    <div class="mf-item">Tryb kiosk (Chromium fullscreen)</div>
+                    <div class="mf-item">Status online/offline w admin panelu</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="glow-divider"></div>
+
+    <!-- JAK DZIAŁA -->
+    <section id="jak-dziala">
+        <div class="reveal">
+            <div class="section-tag">📐 Architektura</div>
+            <h2>Jak to <span class="acc">działa</span> pod maską?</h2>
+            <p class="section-sub">Hybrydowa chmura Google Cloud z terminalem edge na Raspberry Pi — skalowalna, niezawodna i szybka jak piorun.</p>
+        </div>
+
+        <div class="steps">
+            <div class="step reveal">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <div class="step-title">☁️ Chmura (Google Cloud Run)</div>
+                    <div class="step-desc">Aplikacja FastAPI hostowana na Cloud Run z automatycznym skalowaniem. Firestore jako baza w czasie rzeczywistym. Koszt = płacisz za faktyczne użycie, zero idle costs. Wszystkie panele (Kelner, KDS, Admin...) serwowane z jednej instancji.</div>
+                </div>
+            </div>
+            <div class="step reveal">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <div class="step-title">⚡ WebSocket Hub</div>
+                    <div class="step-desc">Każda zmiana w systemie — nowe zamówienie, zmiana statusu, wezwanie kelnera — jest natychmiast broadcastowana przez WebSocket do wszystkich podłączonych urządzeń. Zero pollingu, zero opóźnień.</div>
+                </div>
+            </div>
+            <div class="step reveal">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                    <div class="step-title">🍓 RPi Edge Node (lokal)</div>
+                    <div class="step-desc">Raspberry Pi 4/5 w restauracji działa 24/7, słucha WebSocket i drukuje paragony fiskalne na Elzab Zeta. Wyświetla kiosk POS na lokalnym ekranie HDMI. Bufuje zamówienia przy utracie internetu.</div>
+                </div>
+            </div>
+            <div class="step reveal">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                    <div class="step-title">🤖 AI Layer (Gemini 2.5)</div>
+                    <div class="step-desc">Gemini 2.5 Flash generuje unikalne storytelling przy każdym zamówieniu, żarty dla personelu i profesjonalne raporty dla właściciela. Smart upselling bez udziału kelnera.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI SECTION -->
+    <section id="ai" style="padding-top: 0;">
+        <div class="ai-block reveal">
+            <div class="ai-badge">🤖 Powered by Gemini</div>
+            <h2>Sztuczna inteligencja <span class="acc">w każdym zamówieniu</span></h2>
+            <p class="section-sub" style="max-width:600px; margin-top:12px;">AI nie jest tu ozdobnikiem — to aktywny uczestnik sprzedaży i zarządzania lokalem.</p>
+
+            <div class="ai-features-list">
+                <div class="ai-feat">
+                    <div class="emoji">📖</div>
+                    <div>
+                        <h4>Storytelling przy zamówieniu</h4>
+                        <p>Każdy produkt ma unikalną "legendę" generowaną przez AI — buduje relację z marką, wydłuża czas spędzony w menu i zwiększa satysfakcję gości.</p>
+                    </div>
+                </div>
+                <div class="ai-feat">
+                    <div class="emoji">😄</div>
+                    <div>
+                        <h4>Żarty dla personelu</h4>
+                        <p>Po zalogowaniu kelner widzi świeży, AI-generowany żart. Drobna rzecz, która poprawia atmosferę pracy i motivację zespołu.</p>
+                    </div>
+                </div>
+                <div class="ai-feat">
+                    <div class="emoji">📊</div>
+                    <div>
+                        <h4>Raport dzienny Boss Panelu</h4>
+                        <p>Na koniec dnia AI analizuje sprzedaż, bestsellery i oceny klientów — generuje ekspercki raport z rekomendacjami dla właściciela. W języku polskim, od razu do działania.</p>
+                    </div>
+                </div>
+                <div class="ai-feat">
+                    <div class="emoji">🎯</div>
+                    <div>
+                        <h4>Smart Upselling (roadmap)</h4>
+                        <p>AI analizuje koszyk w czasie rzeczywistym i sugeruje naturalne dodatki — bez nachalności, jak dobry kelner. Szacowany wzrost średniego paragonu: +15-25%.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="glow-divider"></div>
+
+    <!-- TECH STACK -->
+    <section>
+        <div class="reveal">
+            <div class="section-tag">🛠 Tech Stack</div>
+            <h2>Technologie klasy <span class="acc">enterprise</span> w restauracji</h2>
+        </div>
+        <div class="tech-grid">
+            <div class="tech-card reveal">
+                <div class="tech-icon">⚡</div>
+                <div>
+                    <div class="tech-name">FastAPI + Uvicorn</div>
+                    <div class="tech-desc">Asynchroniczny backend Python — jeden z najszybszych na rynku</div>
+                </div>
+            </div>
+            <div class="tech-card reveal">
+                <div class="tech-icon">☁️</div>
+                <div>
+                    <div class="tech-name">Google Cloud Run</div>
+                    <div class="tech-desc">Serverless containers — auto-skalowanie, zero ops, płać za użycie</div>
+                </div>
+            </div>
+            <div class="tech-card reveal">
+                <div class="tech-icon">🔥</div>
+                <div>
+                    <div class="tech-name">Firestore</div>
+                    <div class="tech-desc">Real-time NoSQL DB Google — synchronizacja w milisekundach</div>
+                </div>
+            </div>
+            <div class="tech-card reveal">
+                <div class="tech-icon">🔌</div>
+                <div>
+                    <div class="tech-name">WebSocket (native)</div>
+                    <div class="tech-desc">Stałe połączenie — natychmiastowe powiadomienia dla wszystkich paneli</div>
+                </div>
+            </div>
+            <div class="tech-card reveal">
+                <div class="tech-icon">🤖</div>
+                <div>
+                    <div class="tech-name">Gemini 2.5 Flash</div>
+                    <div class="tech-desc">Google AI — storytelling, raporty i upselling w locie</div>
+                </div>
+            </div>
+            <div class="tech-card reveal">
+                <div class="tech-icon">🍓</div>
+                <div>
+                    <div class="tech-name">Raspberry Pi 4/5</div>
+                    <div class="tech-desc">Edge node — drukarka fiskalna, kiosk POS, offline buffer</div>
+                </div>
+            </div>
+            <div class="tech-card reveal">
+                <div class="tech-icon">🖨️</div>
+                <div>
+                    <div class="tech-name">Elzab Zeta</div>
+                    <div class="tech-desc">Drukarka fiskalna — integracja ESC/POS przez port szeregowy</div>
+                </div>
+            </div>
+            <div class="tech-card reveal">
+                <div class="tech-icon">🔐</div>
+                <div>
+                    <div class="tech-name">Google OAuth 2.0</div>
+                    <div class="tech-desc">Bezpieczne logowanie admina przez konto Google</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="glow-divider"></div>
+
+    <!-- HARDWARE -->
+    <section>
+        <div class="reveal">
+            <div class="section-tag">🍓 Hardware</div>
+            <h2>Gotowy <span class="acc">zestaw startowy</span></h2>
+            <p class="section-sub">Oferujemy przetestowane jednostki RPi skonfigurowane pod klucz — gotowe do podłączenia w restauracji.</p>
+        </div>
+
+        <div class="hw-grid reveal">
+            <div class="hw-card">
+                <h3>🍓 Elvis Edge Node</h3>
+                <p>Raspberry Pi 4/5 z obudową, skonfigurowanym systemem i aplikacją gateway. Gotowy do podłączenia — tylko internet i drukarka.</p>
+                <div class="hw-price">850 PLN</div>
+                <div class="hw-note">jednorazowo · sprzęt + konfiguracja</div>
+            </div>
+            <div class="hw-card">
+                <h3>🔧 Wdrożenie na miejscu</h3>
+                <p>Fizyczna instalacja i konfiguracja Edge Node w lokalu. Podłączenie sieci, drukarki fiskalnej, test end-to-end.</p>
+                <div class="hw-price">500 PLN</div>
+                <div class="hw-note">jednorazowo · dojazd + konfiguracja</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="glow-divider"></div>
+
+    <!-- PRICING -->
+    <section id="cennik">
+        <div class="reveal">
+            <div class="section-tag">💰 Cennik</div>
+            <h2>Modele <span class="acc">abonamentowe</span></h2>
+            <p class="section-sub">Transparentne ceny bez ukrytych kosztów — płacisz za miesiąc, bez długoterminowych umów.</p>
+        </div>
+
+        <div class="pricing-grid">
+            <div class="price-card reveal">
+                <div class="price-name">Zjedz.it Free</div>
+                <div class="price-val">0 PLN</div>
+                <div class="price-period">na start</div>
+                <div class="price-divider"></div>
+                <p style="font-size:0.85em;color:var(--text-muted);margin-bottom:16px;">Idealny model do przetestowania systemu bez zobowiązań</p>
+                <div class="price-feature yes">1 terminal RPi</div>
+                <div class="price-feature yes">Menu przez QR kod</div>
+                <div class="price-feature yes">KDS — kuchnia</div>
+                <div class="price-feature no">Doradztwo konsultingowe</div>
+                <div class="price-feature no">Raport AI końca dnia</div>
+                <a href="#kontakt" class="price-btn outline">Zaczynam za darmo →</a>
+            </div>
+
+            <div class="price-card reveal" style="border-color: rgba(59,130,246,0.3); background: linear-gradient(160deg, rgba(59,130,246,0.05), var(--card));">
+                <div class="price-name" style="color: var(--blue);">Zjedz.it Partner</div>
+                <div class="price-val" style="color: var(--blue);">65 / 35</div>
+                <div class="price-period">podział przychodu</div>
+                <div class="price-divider"></div>
+                <p style="font-size:0.85em;color:var(--text-muted);margin-bottom:16px;">Model partnerski — rozwijamy się razem z Twoim biznesem</p>
+                <div class="price-feature yes" style="color: var(--blue); font-weight: 700;">30 min doradztwa konsultingowego</div>
+                <div class="price-feature yes">Nielimitowane terminale</div>
+                <div class="price-feature yes">Wszystkie moduły systemu</div>
+                <div class="price-feature yes">Pełny Boss Panel</div>
+                <div class="price-feature yes">Wsparcie wdrożeniowe</div>
+                <a href="#kontakt" class="price-btn outline" style="border-color: var(--blue); color: var(--blue);">Zostań partnerem →</a>
+            </div>
+
+            <div class="price-card reveal">
+                <div class="price-name">Elvis Starter</div>
+                <div class="price-val">199 PLN</div>
+                <div class="price-period">miesięcznie</div>
+                <div class="price-divider"></div>
+                <p style="font-size:0.85em;color:var(--text-muted);margin-bottom:16px;">Dla food trucków i małych kawiarni z prostą obsługą</p>
+                <div class="price-feature yes">1 terminal RPi</div>
+                <div class="price-feature yes">Menu przez QR kod</div>
+                <div class="price-feature yes">Podstawowe statystyki</div>
+                <div class="price-feature yes">KDS — kuchnia</div>
+                <div class="price-feature no">Mapa sali Drag & Drop</div>
+                <div class="price-feature no">Raport AI końca dnia</div>
+                <div class="price-feature no">Pełny Boss Panel</div>
+                <a href="#kontakt" class="price-btn outline">Zaczynam →</a>
+            </div>
+
+            <div class="price-card featured reveal">
+                <div class="price-name">Elvis Professional</div>
+                <div class="price-val">399 PLN</div>
+                <div class="price-period">miesięcznie</div>
+                <div class="price-divider"></div>
+                <p style="font-size:0.85em;color:var(--text-muted);margin-bottom:16px;">Dla restauracji i burgerowni z pełną obsługą salidowej</p>
+                <div class="price-feature yes">Nielimitowane terminale RPi</div>
+                <div class="price-feature yes">Menu przez QR kod</div>
+                <div class="price-feature yes">KDS + Wydawka (Expo)</div>
+                <div class="price-feature yes">Mapa sali Drag & Drop</div>
+                <div class="price-feature yes">Pełny Boss Panel</div>
+                <div class="price-feature yes">AI Storyteller (Gemini)</div>
+                <div class="price-feature yes">Raport AI końca dnia</div>
+                <a href="#kontakt" class="price-btn gold">Chcę to! →</a>
+            </div>
+
+            <div class="price-card reveal">
+                <div class="price-name">Elvis Enterprise</div>
+                <div class="price-val">Indyw.</div>
+                <div class="price-period">wycena indywidualna</div>
+                <div class="price-divider"></div>
+                <p style="font-size:0.85em;color:var(--text-muted);margin-bottom:16px;">Dla sieci lokali i dark kitchens z dostępem do API</p>
+                <div class="price-feature yes">Multi-location Hub</div>
+                <div class="price-feature yes">Dostęp do API</div>
+                <div class="price-feature yes">Dedykowany support</div>
+                <div class="price-feature yes">White-label branding</div>
+                <div class="price-feature yes">Integracje zewnętrzne</div>
+                <div class="price-feature yes">SLA gwarancja uptime</div>
+                <a href="#kontakt" class="price-btn outline">Skontaktuj się →</a>
+            </div>
+        </div>
+
+        <!-- AI Add-ons -->
+        <div style="margin-top:40px; display:grid; grid-template-columns:1fr 1fr; gap:20px;" class="reveal">
+            <div class="hw-card">
+                <h3>🤖 AI Storyteller Add-on</h3>
+                <p>Dynamiczne generowanie historii i żartów przy zamawianiu — budowanie relacji z klientem i zwiększanie czasu spędzonego w menu.</p>
+                <div class="hw-price">99 PLN<span style="font-size:0.5em;color:var(--text-muted)">/msc</span></div>
+                <div class="hw-note">do pakietu Starter</div>
+            </div>
+            <div class="hw-card">
+                <h3>📈 AI Profit Architect</h3>
+                <p>Inteligentny upselling, analiza popytu, predykcja ruchu i optymalizacja cen menu w czasie rzeczywistym.</p>
+                <div class="hw-price">199 PLN<span style="font-size:0.5em;color:var(--text-muted)">/msc</span></div>
+                <div class="hw-note">do dowolnego pakietu</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="glow-divider"></div>
+
+    <!-- ROADMAP -->
+    <section>
+        <div class="reveal">
+            <div class="section-tag">🚀 Roadmap</div>
+            <h2>Co <span class="acc">nadchodzi</span> w kolejnych wersjach</h2>
+        </div>
+
+        <div class="roadmap-grid">
+            <div class="roadmap-card reveal">
+                <div class="emoji">📹</div>
+                <h4>Elvis Vision (AI Camera)</h4>
+                <p>Kamera RPi do automatycznego wykrywania brudnych stolików i monitorowania kolejek w food trucku.</p>
+            </div>
+            <div class="roadmap-card reveal">
+                <div class="emoji">🎵</div>
+                <h4>Audio-Atmosfera AI</h4>
+                <p>AI dobiera muzykę w lokalu na podstawie aktualnego ruchu, pory dnia i pogody — zoptymalizuj tempo posiłków.</p>
+            </div>
+            <div class="roadmap-card reveal">
+                <div class="emoji">🏆</div>
+                <h4>Gamifikacja Personelu</h4>
+                <p>System punktowy dla kelnerów za upselling z AI. Rankingi "Mistrz Sprzedaży Tygodnia" widoczne w Boss Panel.</p>
+            </div>
+            <div class="roadmap-card reveal">
+                <div class="emoji">📱</div>
+                <h4>White-label App (PWA)</h4>
+                <p>Dedykowana aplikacja dla stałych klientów z portfelem i systemem lojalnościowym — "Elvis-Punkty".</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="glow-divider"></div>
+
+    <!-- CONTACT -->
+    <div class="cta-section" id="kontakt">
+        <div class="section-tag" style="display:inline-flex;">📩 Kontakt</div>
+        <h2 class="reveal">Wdrożenie <span style="color:var(--gold)">od zaraz.</span><br>Gadajmy.</h2>
+        <p class="section-sub" style="margin:16px auto 0; text-align:center;" class="reveal">
+            Masz restaurację, food truck lub sieć lokali? Umów bezpłatną demonstrację — live pokaz systemu w Twojej lokalizacji.
+        </p>
+
+        <div class="cta-box reveal">
+            <div class="contact-row">
+                <div class="contact-icon">👤</div>
+                <div class="contact-val">Marcin Hajdukiewicz</div>
+            </div>
+            <div class="contact-row">
+                <div class="contact-icon">✉️</div>
+                <div class="contact-val"><a href="mailto:hajdukiewicz@gmail.com">hajdukiewicz@gmail.com</a></div>
+            </div>
+            <div class="contact-row">
+                <div class="contact-icon">🌐</div>
+                <div class="contact-val"><a href="https://zjedz.it">zjedz.it</a></div>
+            </div>
+            <div style="margin-top:10px; padding-top:20px; border-top:1px solid var(--border2); width:100%; text-align:center;">
+                <a href="mailto:hajdukiewicz@gmail.com?subject=Demo Zjedz.it POS&body=Cześć Marcin, chciałbym umówić demonstrację systemu dla mojego lokalu." class="btn-primary" style="display:inline-block;">
+                    📧 Napisz po demo →
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+        <div style="font-size:1.3em;font-weight:800;color:var(--gold);margin-bottom:8px;">zjedz.it POS</div>
+        <p>System POS nowej generacji dla gastronomii — cloud-native, AI-driven, edge-ready.</p>
+        <p style="margin-top:12px;">
+            <a href="/regulamin">Regulamin</a> ·
+            <a href="/portal" style="color:var(--text-muted)">Portal pracownika</a> ·
+            © 2026 Marcin Hajdukiewicz
+        </p>
+    </footer>
+
+    <!-- PARTICLES -->
+    <script>
+        // Floating particles
+        for(let i = 0; i < 8; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.animationDelay = (Math.random() * 8) + 's';
+            p.style.animationDuration = (6 + Math.random() * 6) + 's';
+            p.style.opacity = Math.random() * 0.4;
+            document.body.appendChild(p);
+        }
+
+        // Scroll reveal
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if(e.isIntersecting) {
+                    e.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    </script>
+
+</body>
+</html>

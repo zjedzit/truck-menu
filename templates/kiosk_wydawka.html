@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ brand }} Kiosk Wydawka</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        :root {
+            --gold: #d4af37;
+            --green: #22c55e;
+            --orange: #f97316;
+            --blue: #3b82f6;
+            --red: #ef4444;
+        }
+
+        body {
+            background: #0a0a0f;
+            color: #fff;
+            font-family: system-ui, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* WiFi Setup */
+        #wifi-setup {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: linear-gradient(180deg, #0a0a0f, #1a1a2e);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #wifi-setup.hidden {
+            display: none;
+        }
+
+        .setup-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--gold);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .setup-card h1 {
+            color: var(--gold);
+            font-size: 2em;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+
+        .setup-input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #333;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1.1em;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .setup-input:focus {
+            border-color: var(--gold);
+            outline: none;
+        }
+
+        .setup-btn {
+            width: 100%;
+            padding: 18px;
+            background: var(--gold);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 900;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .setup-btn:hover {
+            background: #fff;
+        }
+
+        .wifi-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .wifi-item {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #333;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .wifi-item:hover {
+            border-color: var(--gold);
+        }
+
+        .wifi-item.connected {
+            border-color: var(--green);
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        /* Header */
+        .k-header {
+            background: linear-gradient(90deg, #111, #1a1a2e);
+            border-bottom: 3px solid var(--gold);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .k-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .k-title h1 {
+            font-size: 1.8em;
+            font-weight: 900;
+            color: var(--gold);
+        }
+
+        .device-badge {
+            background: var(--gold);
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 900;
+        }
+
+        .k-clock {
+            font-size: 2.5em;
+            font-weight: 900;
+            font-family: monospace;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-dot.online {
+            background: var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.offline {
+            background: var(--red);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.5
+            }
+        }
+
+        /* Orders Grid */
+        .orders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            height: calc(100vh - 140px);
+            overflow-y: auto;
+        }
+
+        .order-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            border: 2px solid #333;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .order-card.ready {
+            border-color: var(--green);
+            box-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
+        }
+
+        .order-card.new {
+            border-color: var(--blue);
+            animation: glow-blue 2s infinite;
+        }
+
+        @keyframes glow-blue {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(59, 130, 246, 0.3)
+            }
+
+            50% {
+                box-shadow: 0 0 30px rgba(59, 130, 246, 0.6)
+            }
+        }
+
+        .o-header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px dashed rgba(255, 255, 255, 0.1);
+        }
+
+        .o-number {
+            font-size: 2.5em;
+            font-weight: 900;
+        }
+
+        .o-timer {
+            font-size: 1.5em;
+            font-weight: 900;
+            font-family: monospace;
+            padding: 8px 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+        }
+
+        .o-timer.danger {
+            color: var(--red);
+            animation: pulse 0.5s infinite;
+        }
+
+        .o-items {
+            padding: 15px 20px;
+        }
+
+        .o-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .o-item:last-child {
+            border-bottom: none;
+        }
+
+        .qty-badge {
+            background: var(--gold);
+            color: #000;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.2em;
+        }
+
+        .item-name {
+            font-size: 1.3em;
+            font-weight: 700;
+            flex: 1;
+            margin: 0 15px;
+        }
+
+        .item-note {
+            color: var(--red);
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .o-footer {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .issue-btn {
+            width: 100%;
+            padding: 20px;
+            background: var(--green);
+            color: #fff;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.3em;
+            font-weight: 900;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .issue-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+        }
+
+        .empty-state .emoji {
+            font-size: 8em;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h2 {
+            font-size: 2.5em;
+            color: var(--gold);
+            margin-bottom: 10px;
+        }
+
+        /* Fiscal Bar */
+        .fiscal-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.95);
+            border-top: 2px solid #333;
+            padding: 12px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .fiscal-label {
+            color: #666;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Settings Button */
+        .settings-btn {
+            position: fixed;
+            top: 80px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #333;
+            color: #666;
+            padding: 10px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85em;
+            z-index: 50;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- WiFi Setup Overlay -->
+    <div id="wifi-setup" class="hidden">
+        <div class="setup-card">
+            <div style="font-size: 4em;">📶</div>
+            <h1>KONFIGURACJA WI-FI</h1>
+            <p id="setup-subtitle">Podaj numer kiosku</p>
+
+            <!-- Step 1: Device Number -->
+            <div id="step-num">
+                <input type="number" id="device-num" class="setup-input" placeholder="Numer kiosku (1-99)" min="1"
+                    max="99">
+                <button class="setup-btn" onclick="saveDeviceNum()">DALEJ →</button>
+            </div>
+
+            <!-- Step 2: WiFi -->
+            <div id="step-wifi" style="display:none;">
+                <p style="color:#888;margin-bottom:15px;">Wybierz sieć:</p>
+                <div id="wifi-list" class="wifi-list"></div>
+                <div id="wifi-pass" style="display:none;">
+                    <p id="sel-ssid" style="color:var(--gold);font-weight:700;margin-bottom:10px;"></p>
+                    <input type="password" id="wifi-password" class="setup-input" placeholder="Hasło WiFi">
+                    <button class="setup-btn" onclick="connectWifi()">POŁĄCZ</button>
+                </div>
+                <button class="setup-btn" style="background:#333;margin-top:10px;" onclick="showStep('num')">←
+                    WSTECZ</button>
+            </div>
+
+            <!-- Step 3: Server -->
+            <div id="step-server" style="display:none;">
+                <p style="color:#888;margin-bottom:15px;">Adres serwera:</p>
+                <input type="text" id="server-url" class="setup-input" placeholder="https://bar.zjedz.it"
+                    value="https://bar.zjedz.it">
+                <button class="setup-btn" onclick="saveServer()">ZAPISZ I STARTUJ</button>
+                <button class="setup-btn" style="background:#333;margin-top:10px;" onclick="showStep('wifi')">←
+                    WSTECZ</button>
+            </div>
+
+            <!-- Step Complete -->
+            <div id="step-done" style="display:none;">
+                <div style="font-size:4em;">✅</div>
+                <h1 style="color:var(--green);">GOTOWE!</h1>
+                <p>Kiosk skonfigurowany. Startuję...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Interface -->
+    <header class="k-header">
+        <div class="k-title">
+            <h1>📤 WYDAWKA</h1>
+            <div class="device-badge" id="device-num-badge">KIOSK #--</div>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2">
+                <div class="status-dot offline" id="server-status"></div>
+                <span id="server-label" style="font-size:0.85em;color:#888;">SERWER</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="status-dot offline" id="printer-status"></div>
+                <span style="font-size:0.85em;color:#888;">DRUKARKA</span>
+            </div>
+            <div class="k-clock" id="clock">00:00:00</div>
+        </div>
+    </header>
+
+    <div id="orders-container" class="orders-grid"></div>
+
+    <div id="empty-state" class="empty-state" style="display:none;">
+        <div class="emoji">🍽️</div>
+        <h2>WSZYSTKO WYDANE!</h2>
+        <p style="color:#666;">Oczekuj na nowe zamówienia...</p>
+    </div>
+
+    <!-- Fiscal Printer Bar -->
+    <div class="fiscal-bar">
+        <div class="fiscal-label">
+            📟 Drukarka Fiskalna: <span id="printer-name" style="color:#fff;">---</span>
+        </div>
+        <div style="font-size:0.85em;color:#666;" id="device-info">
+            Kiosk: <span id="kiosk-id">#--</span> |
+            IP: <span id="kiosk-ip">---</span>
+        </div>
+    </div>
+
+    <button class="settings-btn" onclick="showSettings()">⚙️ USTAWIENIA</button>
+
+    <script>
+        // Config
+        const CONFIG_KEY = 'kiosk_config';
+        let config = {};
+        let orders = [];
+
+        // Load or init config
+        function loadConfig() {
+            const stored = localStorage.getItem(CONFIG_KEY);
+            if (stored) {
+                config = JSON.parse(stored);
+                return true;
+            }
+            return false;
+        }
+
+        function saveConfig() {
+            localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+        }
+
+        function showStep(step) {
+            ['num', 'wifi', 'server', 'done'].forEach(s => {
+                document.getElementById('step-' + s).style.display = s === step ? 'block' : 'none';
+            });
+        }
+
+        function saveDeviceNum() {
+            const num = parseInt(document.getElementById('device-num').value);
+            if (num < 1 || num > 99) {
+                alert('Numer musi być 1-99');
+                return;
+            }
+            config.deviceNum = num;
+            saveConfig();
+            showStep('wifi');
+            loadWifiNetworks();
+        }
+
+        async function loadWifiNetworks() {
+            const list = document.getElementById('wifi-list');
+            list.innerHTML = '<div style="color:#888;padding:20px;">Szukam sieci...</div>';
+
+            // Simulated WiFi list - in real RPi kiosk this would call native API
+            const demoNetworks = [
+                { ssid: 'MojaSiec_5G', signal: -45, connected: false },
+                { ssid: 'Siec_Guest', signal: -60, connected: false },
+                { ssid: 'Router_FH', signal: -70, connected: false }
+            ];
+
+            list.innerHTML = demoNetworks.map(n => `
+                <div class="wifi-item ${n.connected ? 'connected' : ''}" onclick="selectWifi('${n.ssid}')">
+                    <span>📶 ${n.ssid}</span>
+                    <span style="color:${n.signal > -50 ? '#22c55e' : n.signal > -70 ? '#f97316' : '#ef4444'}">
+                        ${'█'.repeat(Math.min(4, Math.max(1, Math.ceil((n.signal + 90) / 15)))}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        function selectWifi(ssid) {
+            document.getElementById('sel-ssid').textContent = '🔒 ' + ssid;
+            document.getElementById('wifi-pass').style.display = 'block';
+            config.wifiSsid = ssid;
+        }
+
+        function connectWifi() {
+            const pass = document.getElementById('wifi-password').value;
+            if (pass.length < 8) {
+                alert('Hasło musi mieć min. 8 znaków');
+                return;
+            }
+            config.wifiPass = pass;
+            saveConfig();
+            showStep('server');
+        }
+
+        function saveServer() {
+            const url = document.getElementById('server-url').value;
+            if (!url) {
+                alert('Podaj adres serwera');
+                return;
+            }
+            config.serverUrl = url;
+            config.setupComplete = true;
+            saveConfig();
+            showStep('done');
+            setTimeout(() => {
+                document.getElementById('wifi-setup').classList.add('hidden');
+                initApp();
+            }, 2000);
+        }
+
+        function showSettings() {
+            const overlay = document.getElementById('wifi-setup');
+            overlay.classList.remove('hidden');
+            showStep('num');
+            document.getElementById('device-num').value = config.deviceNum || '';
+        }
+
+        // Main App
+        function initApp() {
+            document.getElementById('device-num-badge').textContent = 'KIOSK #' + (config.deviceNum || '--');
+            document.getElementById('kiosk-id').textContent = '#' + (config.deviceNum || '--');
+
+            updateClock();
+            setInterval(updateClock, 1000);
+
+            loadOrders();
+            setInterval(loadOrders, 5000);
+
+            checkServerStatus();
+            setInterval(checkServerStatus, 10000);
+
+            // Wake Lock for kiosk
+            requestWakeLock();
+        }
+
+        // Clock
+        function updateClock() {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString('pl-PL');
+        }
+
+        // Wake Lock (prevent screen sleep)
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock active');
+                }
+            } catch (e) {
+                console.log('Wake Lock not supported');
+            }
+        }
+
+        // Load orders from server
+        async function loadOrders() {
+            try {
+                const serverUrl = config.serverUrl || window.location.origin;
+                const res = await fetch(serverUrl + '/api/all_orders');
+                const data = await res.json();
+                orders = (data.orders || []).filter(o => o.status !== 'closed');
+                renderOrders();
+                checkServerStatus();
+            } catch (e) {
+                console.error('Load orders error:', e);
+                document.getElementById('server-status').className = 'status-dot offline';
+            }
+        }
+
+        // Render orders
+        function renderOrders() {
+            const container = document.getElementById('orders-container');
+            const emptyState = document.getElementById('empty-state');
+
+            // Group by table
+            const groups = {};
+            orders.forEach(o => {
+                if (!groups[o.table_number]) {
+                    groups[o.table_number] = { items: [], ready: true };
+                }
+                groups[o.table_number].items.push(o);
+                if (o.status !== 'ready') groups[o.table_number].ready = false;
+            });
+
+            if (Object.keys(groups).length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'flex';
+                return;
+            }
+
+            container.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            container.innerHTML = Object.entries(groups).map(([table, group]) => {
+                const isWynos = String(table).startsWith('W');
+                const isReady = group.ready;
+                const oldestTs = group.items[0]?.timestamp;
+                const timerClass = getTimerClass(oldestTs);
+
+                return `
+                    <div class="order-card ${isReady ? 'ready' : 'new'}">
+                        <div class="o-header">
+                            <div class="o-number ${isWynos ? 'wynos' : ''}">${isWynos ? '🛵' : '🍽️'} ${table}</div>
+                            <div class="o-timer ${timerClass}" data-ts="${oldestTs || ''}">${getTimerText(oldestTs)}</div>
+                        </div>
+                        <div class="o-items">
+                            ${group.items.map(item => `
+                                <div class="o-item">
+                                    <div class="qty-badge">1</div>
+                                    <div style="flex:1;margin-left:15px;">
+                                        <div class="item-name">${item.burger_name || item.name || '---'}</div>
+                                        ${item.note ? `<div class="item-note">📝 ${item.note}</div>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="o-footer">
+                            ${isReady
+                        ? `<button class="issue-btn" onclick="issueOrder('${table}')">✅ WYDAJ ZAMÓWIENIE</button>`
+                        : `<button class="issue-btn" disabled style="background:#333;">⏳ PRZYGOTOWUJE SIĘ...</button>`
+                    }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Update timers every second
+            updateTimers();
+        }
+
+        function getTimerText(ts) {
+            if (!ts) return '00:00';
+            const diff = Math.floor((new Date() - new Date(ts)) / 1000);
+            const m = Math.floor(Math.max(0, diff) / 60);
+            const s = Math.max(0, diff) % 60;
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function getTimerClass(ts) {
+            if (!ts) return '';
+            const diff = Math.floor((new Date() - new Date(ts)) / 1000);
+            if (diff > 600) return 'danger'; // 10 min
+            if (diff > 300) return 'warning'; // 5 min
+            return '';
+        }
+
+        function updateTimers() {
+            document.querySelectorAll('.o-timer').forEach(el => {
+                const ts = el.dataset.ts;
+                el.textContent = getTimerText(ts);
+                el.className = 'o-timer ' + getTimerClass(ts);
+            });
+        }
+
+        // Issue order
+        async function issueOrder(table) {
+            try {
+                const serverUrl = config.serverUrl || window.location.origin;
+                await fetch(serverUrl + '/api/wydawka/wydaj_bon', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ table_number: table, kiosk_id: config.deviceNum })
+                });
+                loadOrders();
+            } catch (e) {
+                alert('Błąd wydania: ' + e);
+            }
+        }
+
+        // Check server status
+        async function checkServerStatus() {
+            try {
+                const serverUrl = config.serverUrl || window.location.origin;
+                const res = await fetch(serverUrl + '/api/device_status/kiosk_' + config.deviceNum, {
+                    method: 'GET',
+                    cache: 'no-cache'
+                });
+                if (res.ok) {
+                    document.getElementById('server-status').className = 'status-dot online';
+                    // Try to get POS printer status
+                    const posRes = await fetch(serverUrl + '/api/device_status/Elvis_KWI_0326');
+                    if (posRes.ok) {
+                        document.getElementById('printer-status').className = 'status-dot online';
+                        document.getElementById('printer-name').textContent = 'Elzab / POS';
+                    }
+                }
+            } catch (e) {
+                document.getElementById('server-status').className = 'status-dot offline';
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (loadConfig() && config.setupComplete) {
+                initApp();
+            } else {
+                document.getElementById('wifi-setup').classList.remove('hidden');
+            }
+        });
+
+        // Update timers every second
+        setInterval(updateTimers, 1000);
+    </script>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rozliczenia Kasy | Elvis POS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: var(--card); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h1, h2 { margin-top: 0; color: #1f2937; }
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: opacity 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--secondary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .input { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; margin: 10px 0; box-sizing: border-box; font-size: 1rem; }
+        label { font-size: 0.9rem; color: #6b7280; font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e5e7eb; }
+        .warning { background: #fee2e2; color: #991b1b; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fecaca; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
+        .status-open { background: #dcfce7; color: #166534; }
+        .status-closed { background: #f3f4f6; color: #374151; }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h1>💰 Rozliczenia i Stan Kasy</h1>
+            <div id="sessionStatus"></div>
+        </header>
+
+        <!-- Warning for Morning Discrepancy -->
+        <div id="morningWarning" class="warning" style="display: none;">
+            ⚠️ <strong>Uwaga:</strong> Stan początkowy nie zgadza się ze stanem zamknięcia poprzedniego dnia! Różnica: <span id="morningDiff"></span> PLN.
+        </div>
+
+        <div class="grid">
+            <!-- Left Side: Actions -->
+            <div class="left-col">
+                <!-- Open Session -->
+                <div class="card" id="openSection">
+                    <h2>Otwarcie Dnia</h2>
+                    <label>Stan gotówki na start (PLN):</label>
+                    <input type="number" id="startCash" class="input" placeholder="0.00" step="0.01">
+                    <button class="btn btn-primary" onclick="openSession()">Otwórz Kasę</button>
+                </div>
+
+                <!-- Transaction Panel (Only if open) -->
+                <div class="card" id="txSection" style="display: none;">
+                    <h2>Wpłata / Wypłata</h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label>Kwota:</label>
+                            <input type="number" id="txAmount" class="input" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label>Typ:</label>
+                            <select id="txType" class="input">
+                                <option value="in">Wpłata (+)</option>
+                                <option value="out">Wypłata (-)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label>Powód / Opis:</label>
+                    <input type="text" id="txReason" class="input" placeholder="np. Zakup warzyw, Zmiana kasy">
+                    <button class="btn btn-success" onclick="addTransaction()">Zapisz Transakcję</button>
+                </div>
+
+                <!-- Close Session -->
+                <div class="card" id="closeSection" style="display: none;">
+                    <h2>Zamknięcie Dnia</h2>
+                    <label>Fizyczny stan gotówki w szufladzie (PLN):</label>
+                    <input type="number" id="endCash" class="input" placeholder="0.00">
+                    <button class="btn btn-danger" onclick="closeSession()">Zamknij Dzień i Rozlicz</button>
+                </div>
+            </div>
+
+            <!-- Right Side: Status & Settlements -->
+            <div class="right-col">
+                <div class="card" id="statusCard">
+                    <h2>Aktualny Stan</h2>
+                    <table>
+                        <tr><td>Start:</td><td id="viewStart">0.00 PLN</td></tr>
+                        <tr><td>Sprzedaż (Gotówka):</td><td id="viewSales">0.00 PLN</td></tr>
+                        <tr><td>Wpłaty/Wypłaty:</td><td id="viewFlow">0.00 PLN</td></tr>
+                        <tr style="font-weight: 700;"><td>Oczekiwany stan:</td><td id="viewExpected">0.00 PLN</td></tr>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <h2>Rozliczenie Kelnerów</h2>
+                    <table id="staffTable">
+                        <thead>
+                            <tr><th>Pracownik</th><th>Sprzedaż</th><th>Wypłaty</th><th>Netto</th></tr>
+                        </thead>
+                        <tbody>
+                            <!-- Filled via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STAFF_ID = "Manager"; // Domyślnie dla testów
+
+        async function refresh() {
+            const res = await fetch('/api/cash/status');
+            const data = await res.json();
+            
+            const session = data.session;
+            const statusBadge = document.getElementById('sessionStatus');
+            
+            if (session) {
+                statusBadge.innerHTML = `<span class="status-badge status-open">Otwarte od ${new Date(session.opened_at).toLocaleTimeString()}</span>`;
+                document.getElementById('openSection').style.display = 'none';
+                document.getElementById('txSection').style.display = 'block';
+                document.getElementById('closeSection').style.display = 'block';
+                
+                document.getElementById('viewStart').innerText = session.starting_cash.toFixed(2) + " PLN";
+                document.getElementById('viewExpected').innerText = session.expected_now.toFixed(2) + " PLN";
+                
+                if (session.morning_difference != 0) {
+                    document.getElementById('morningWarning').style.display = 'block';
+                    document.getElementById('morningDiff').innerText = session.morning_difference.toFixed(2);
+                }
+
+                loadSettlements();
+            } else {
+                statusBadge.innerHTML = `<span class="status-badge status-closed">Kasa zamknięta</span>`;
+                document.getElementById('openSection').style.display = 'block';
+                document.getElementById('txSection').style.display = 'none';
+                document.getElementById('closeSection').style.display = 'none';
+            }
+        }
+
+        async function openSession() {
+            const cash = document.getElementById('startCash').value;
+            if (!cash) return alert("Podaj stan kasy!");
+            
+            const res = await fetch(`/api/cash/open?starting_cash=${cash}&staff_id=${STAFF_ID}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.ok) refresh();
+            else alert(data.error);
+        }
+
+        async function addTransaction() {
+            const amount = document.getElementById('txAmount').value;
+            const type = document.getElementById('txType').value;
+            const reason = document.getElementById('txReason').value;
+            
+            if (!amount || !reason) return alert("Uzupełnij kwotę i powód!");
+            
+            const res = await fetch(`/api/cash/transaction?amount=${amount}&type=${type}&reason=${reason}&staff_id=${STAFF_ID}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.ok) {
+                alert("Transakcja zapisana");
+                refresh();
+            }
+        }
+
+        async function closeSession() {
+            const actual = document.getElementById('endCash').value;
+            if (!actual) return alert("Wpisz ile fizycznie masz gotówki!");
+            
+            const res = await fetch(`/api/cash/close?actual_cash=${actual}&staff_id=${STAFF_ID}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.ok) {
+                alert("Dzień zamknięty. Różnica: " + data.difference + " PLN");
+                refresh();
+            }
+        }
+
+        async function loadSettlements() {
+            const res = await fetch('/api/cash/settlements');
+            const data = await res.json();
+            const tbody = document.querySelector('#staffTable tbody');
+            tbody.innerHTML = '';
+            
+            for (const [staff, stats] of Object.entries(data.settlements)) {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${staff}</td>
+                        <td>${stats.total_sales.toFixed(2)} PLN</td>
+                        <td>${stats.payouts.toFixed(2)} PLN</td>
+                        <td style="font-weight:700">${stats.net.toFixed(2)} PLN</td>
+                    </tr>
+                `;
+            }
+        }
+
+        refresh();
+    </script>
+</body>
+</html>

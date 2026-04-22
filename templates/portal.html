@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <title>{{ brand }} POS | Portal Pracownika</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --gold: #d4af37; --bg: #0a0a0a; --card: #161616; --green: #388e3c; --red: #d32f2f; }
+        * { box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        body { background: var(--bg); color: #e0e0e0; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow:hidden; }
+
+        .container { width: 100%; max-width: 500px; padding: 20px; text-align: center; }
+        .logo { color: var(--gold); font-size: 2.5em; font-weight: 800; margin-bottom: 5px; letter-spacing: -1px; }
+        .subtitle { color: #888; margin-bottom: 40px; font-size: 1.1em; }
+
+        .card { background: var(--card); padding: 30px; border-radius: 20px; border: 1px solid #333; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+
+        /* EKRAN 1: WYBÓR PRACOWNIKA */
+        #select-screen { display: block; }
+        .staff-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .staff-btn {
+            background: #222; border: 1px solid #333; color: #fff; padding: 30px 15px; border-radius: 15px;
+            cursor: pointer; transition: 0.2s; font-size: 1.1em; font-weight: 600;
+        }
+        .staff-btn:hover { border-color: var(--gold); transform: translateY(-3px); }
+        .staff-btn:active { transform: scale(0.95); }
+        .staff-avatar {
+            width: 50px; height: 50px; background: var(--gold); color: #000; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.8em;
+            margin: 0 auto 10px;
+        }
+        .staff-name { display: block; font-size: 1em; margin-bottom: 5px; }
+        .staff-role { display: block; font-size: 0.75em; color: #999; text-transform: uppercase; }
+
+        #select-msg { color: var(--red); font-weight: bold; margin-top: 15px; min-height: 20px; }
+
+        .master-link { margin-top: 20px; text-align: center; }
+        .master-btn { background: transparent; color: #888; border: none; cursor: pointer; font-size: 0.9em; text-decoration: underline; transition: 0.2s; }
+        .master-btn:hover { color: var(--gold); }
+
+        /* EKRAN 2: PIN PAD */
+        #pin-screen { display: none; }
+        .pin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
+        .pin-back { background: none; border: none; color: var(--gold); font-size: 1.5em; cursor: pointer; padding: 5px; }
+        .pin-welcome { flex: 1; margin-left: 10px; }
+        .pin-welcome-name { color: var(--gold); font-size: 1.3em; font-weight: 800; }
+        .pin-welcome-role { color: #888; font-size: 0.8em; text-transform: uppercase; margin-top: 3px; }
+
+        .pin-display {
+            background: #000; border: 1px solid #333; color: var(--gold); font-size: 2.5em; letter-spacing: 15px;
+            padding: 15px; border-radius: 12px; margin-bottom: 20px; min-height: 70px; display: flex; align-items: center; justify-content: center;
+        }
+        .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+        .pin-btn {
+            background: #222; border: none; color: #fff; font-size: 1.8em; padding: 20px; border-radius: 15px; font-weight: 600; cursor: pointer; transition: 0.1s;
+        }
+        .pin-btn:active { background: var(--gold); color: #000; transform: scale(0.95); }
+        .pin-btn.backspace { background: #333; color: #ff5252; }
+        .pin-btn.backspace:active { background: #ff5252; color: #fff; }
+
+        #pin-msg { color: var(--red); font-weight: bold; margin-top: 15px; min-height: 20px; }
+
+        /* EKRAN 3: DASHBOARD */
+        #dashboard-screen { display: none; }
+        .welcome { font-size: 1.5em; color: var(--gold); margin-bottom: 5px; font-weight: 600; }
+        .role-text { color: #888; margin-bottom: 30px; text-transform: uppercase; font-size: 0.9em; letter-spacing: 1px;}
+
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .module-btn {
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+            background: #222; border: 1px solid #333; color: #fff; text-decoration: none; padding: 25px; border-radius: 15px;
+            font-size: 1.4em; font-weight: 800; transition: 0.2s;
+        }
+        .module-btn:hover { transform: translateY(-5px); border-color: var(--gold); }
+        .module-btn.waiter { background: linear-gradient(135deg, #1b5e20, #2e7d32); }
+        .module-btn.kds { background: linear-gradient(135deg, #0d47a1, #1976d2); }
+        .module-btn.wydawka { background: linear-gradient(135deg, #4a148c, #7b1fa2); }
+        .module-btn.admin { background: linear-gradient(135deg, #b71c1c, #d32f2f); }
+        .module-btn.master { background: linear-gradient(135deg, #e65100, #f57c00); }
+
+        .logout-btn { background: transparent; color: #888; border: none; margin-top: 30px; cursor: pointer; font-size: 1em; text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">{{ brand }} POS</div>
+        <div class="subtitle">Cloud Operations Interface</div>
+
+        <div class="card">
+            <!-- EKRAN 1: WYBÓR PRACOWNIKA -->
+            <div id="select-screen">
+                <h3 style="color:var(--gold); margin-top:0;">Kim jesteś?</h3>
+                <div class="staff-grid" id="staff-grid"></div>
+                <div id="select-msg"></div>
+                <div class="master-link">
+                    <button class="master-btn" onclick="showPinScreen('MASTER', 'master')">🔓 MASTER / ADMIN</button>
+                </div>
+                
+                <!-- LOCAL CONNECTION CONFIGURATION -->
+                <div id="config-section" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; display: none;">
+                    <h3 style="color:var(--gold); margin-top:0;">⚙️ Konfiguracja Serwera</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display:block; margin-bottom: 5px; color: #888;">Adres serwera (https://...)</label>
+                        <input type="text" id="server-address" placeholder="https://your-domain.com" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display:block; margin-bottom: 5px; color: #888;">Lokalny adres (http://elvis.local:8080/)</label>
+                        <input type="text" id="local-address" placeholder="http://elvis.local:8080" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display:block; margin-bottom: 5px; color: #888;">Klucz urządzenia / ID POS</label>
+                        <input type="text" id="device-key" placeholder="DEVICE_ID_12345" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff;">
+                    </div>
+                    <button onclick="saveConfiguration()" style="width: 100%; padding: 12px; background: var(--gold); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Zapisz Konfigurację</button>
+                </div>
+            </div>
+
+            <!-- EKRAN 2: PIN PAD -->
+            <div id="pin-screen">
+                <div class="pin-header">
+                    <button class="pin-back" onclick="backToSelect()">←</button>
+                    <div class="pin-welcome">
+                        <div class="pin-welcome-name" id="pin-name">Imię</div>
+                        <div class="pin-welcome-role" id="pin-role">rola</div>
+                    </div>
+                </div>
+
+                <div class="pin-display" id="pin-display"></div>
+
+                <div class="pin-pad">
+                    <button class="pin-btn" onclick="addPin(1)">1</button>
+                    <button class="pin-btn" onclick="addPin(2)">2</button>
+                    <button class="pin-btn" onclick="addPin(3)">3</button>
+                    <button class="pin-btn" onclick="addPin(4)">4</button>
+                    <button class="pin-btn" onclick="addPin(5)">5</button>
+                    <button class="pin-btn" onclick="addPin(6)">6</button>
+                    <button class="pin-btn" onclick="addPin(7)">7</button>
+                    <button class="pin-btn" onclick="addPin(8)">8</button>
+                    <button class="pin-btn" onclick="addPin(9)">9</button>
+                    <button class="pin-btn backspace" onclick="delPin()">⌫</button>
+                    <button class="pin-btn" onclick="addPin(0)">0</button>
+                    <button class="pin-btn" style="background:var(--gold); color:#000;" onclick="submitPin()">OK</button>
+                </div>
+                <div id="pin-msg"></div>
+            </div>
+
+            <!-- EKRAN 3: DASHBOARD -->
+            <div id="dashboard-screen">
+                <div class="welcome" id="user-name">Witaj!</div>
+                <div class="role-text" id="user-role">Rola</div>
+
+                <div class="dashboard-grid" id="modules-container">
+                    <!-- Buttons will be injected here via JS -->
+                </div>
+
+                <button class="logout-btn" onclick="logout()">Wyloguj Się ⎋</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPin = "";
+        let selectedStaff = null; // {name, role}
+
+        const selectScreen = document.getElementById("select-screen");
+        const pinScreen = document.getElementById("pin-screen");
+        const dashboardScreen = document.getElementById("dashboard-screen");
+
+        // ─── EKRAN 1: ZAŁADUJ PRACOWNIKÓW ───────────────────────────────────
+        async function loadStaff() {
+            try {
+                const res = await fetch('/api/auth/staff_list');
+                const staff = await res.json();
+                const grid = document.getElementById('staff-grid');
+
+                grid.innerHTML = staff.map(s => {
+                    const firstLetter = (s.name || '?')[0].toUpperCase();
+                    return `<button class="staff-btn" onclick="showPinScreen('${s.name}', '${s.role}')">
+                        <div class="staff-avatar">${firstLetter}</div>
+                        <span class="staff-name">${s.name}</span>
+                        <span class="staff-role">${s.role}</span>
+                    </button>`;
+                }).join('');
+
+                if (staff.length === 0) {
+                    grid.innerHTML = '<p style="color:#666; grid-column:1/-1;">Brak pracowników w bazie.</p>';
+                }
+            } catch(e) {
+                document.getElementById('select-msg').innerText = "Błąd ładowania listy pracowników!";
+            }
+        }
+
+        // ─── EKRAN 2: PRZEJŚCIE DO PIN PAD ───────────────────────────────
+        function showPinScreen(name, role) {
+            selectedStaff = {name, role};
+            currentPin = "";
+            document.getElementById('pin-name').innerText = name;
+            document.getElementById('pin-role').innerText = role;
+            updatePinDisplay();
+            document.getElementById('pin-msg').innerText = "";
+
+            selectScreen.style.display = 'none';
+            pinScreen.style.display = 'block';
+            dashboardScreen.style.display = 'none';
+        }
+
+        // ─── PIN PAD ─────────────────────────────────────────────────────
+        function addPin(num) {
+            if(currentPin.length < 8) {
+                currentPin += num;
+                updatePinDisplay();
+                document.getElementById('pin-msg').innerText = "";
+            }
+        }
+
+        function delPin() {
+            currentPin = currentPin.slice(0, -1);
+            updatePinDisplay();
+            document.getElementById('pin-msg').innerText = "";
+        }
+
+        function updatePinDisplay() {
+            document.getElementById('pin-display').innerText = "•".repeat(currentPin.length);
+        }
+
+        async function submitPin() {
+            if (currentPin.length === 0) return;
+
+            const msg = document.getElementById('pin-msg');
+            msg.style.color = "var(--gold)";
+            msg.innerText = "Weryfikacja...";
+
+            try {
+                // Jeśli wybrano konkretnego pracownika, wyślij name + pin
+                // Jeśli PIN-only (MASTER/ADMIN), wyślij sam pin
+                const body = selectedStaff?.name && selectedStaff.name !== "MASTER"
+                    ? {name: selectedStaff.name, pin: currentPin}
+                    : {pin: currentPin};
+
+                const res = await fetch('/api/auth/staff_login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+
+                if (data.ok) {
+                    localStorage.setItem('staff_pin', currentPin);
+                    localStorage.setItem('staff_role', data.role);
+                    localStorage.setItem('staff_name', data.name);
+                    showDashboard(data.role, data.name);
+                } else {
+                    msg.style.color = "var(--red)";
+                    msg.innerText = "❌ Niepoprawny PIN!";
+                    currentPin = "";
+                    updatePinDisplay();
+                }
+            } catch(e) {
+                msg.style.color = "var(--red)";
+                msg.innerText = "❌ Błąd komunikacji z serwerem!";
+                currentPin = "";
+                updatePinDisplay();
+            }
+        }
+
+        function backToSelect() {
+            selectScreen.style.display = 'block';
+            pinScreen.style.display = 'none';
+            dashboardScreen.style.display = 'none';
+            currentPin = "";
+            selectedStaff = null;
+        }
+
+        // ─── EKRAN 3: DASHBOARD ──────────────────────────────────────────
+        function showDashboard(role, name) {
+           selectScreen.style.display = 'none';
+           pinScreen.style.display = 'none';
+           dashboardScreen.style.display = 'block';
+
+           document.getElementById('user-name').innerText = `Witaj, ${name}`;
+           document.getElementById('user-role').innerText = role;
+
+           // Show configuration section for authorized users
+           const configSection = document.getElementById('config-section');
+           if (['admin', 'master'].includes(role)) {
+               configSection.style.display = 'block';
+               loadConfiguration(); // Load saved configuration
+           } else {
+               configSection.style.display = 'none';
+           }
+
+           const c = document.getElementById("modules-container");
+           c.innerHTML = "";
+           
+           const systemMode = "{{ system_mode|lower if system_mode else 'restaurant' }}";
+
+           if (['waiter', 'admin', 'master'].includes(role) && systemMode !== 'foodtruck') {
+               c.innerHTML += `<a href="/waiter" class="module-btn waiter">🏃‍♂️ MÓJ POS (KELNER)</a>`;
+           }
+           if (['kds', 'admin', 'master'].includes(role)) {
+               c.innerHTML += `<a href="/kds" class="module-btn kds">👨‍🍳 KUCHNIA (KDS)</a>`;
+           }
+           if (['wydawka', 'admin', 'master'].includes(role)) {
+               c.innerHTML += `<a href="/wydawka" class="module-btn wydawka">📦 WYDAWKA</a>`;
+           }
+           if (['admin', 'master'].includes(role)) {
+               c.innerHTML += `<a href="/admin" class="module-btn admin">⚙️ ADMIN PANEL</a>`;
+           }
+           if (['master'].includes(role)) {
+               c.innerHTML += `<a href="/master" class="module-btn master">👑 MASTER PANEL</a>`;
+           }
+       }
+       
+       // Configuration functions
+       async function loadConfiguration() {
+           try {
+               const res = await fetch('/api/config/local');
+               const config = await res.json();
+               if (config.server_address) document.getElementById('server-address').value = config.server_address;
+               if (config.local_address) document.getElementById('local-address').value = config.local_address;
+               if (config.device_key) document.getElementById('device-key').value = config.device_key;
+           } catch (e) {
+               console.error('Failed to load configuration:', e);
+           }
+       }
+       
+       async function saveConfiguration() {
+           const serverAddress = document.getElementById('server-address').value;
+           const localAddress = document.getElementById('local-address').value;
+           const deviceKey = document.getElementById('device-key').value;
+           
+           try {
+               const res = await fetch('/api/config/local', {
+                   method: 'POST',
+                   headers: {'Content-Type': 'application/json'},
+                   body: JSON.stringify({
+                       server_address: serverAddress,
+                       local_address: localAddress,
+                       device_key: deviceKey
+                   })
+               });
+               
+               const result = await res.json();
+               if (result.success) {
+                   alert('Konfiguracja zapisana pomyślnie!');
+               } else {
+                   alert('Błąd podczas zapisywania konfiguracji: ' + result.error);
+               }
+           } catch (e) {
+               console.error('Failed to save configuration:', e);
+               alert('Błąd sieci podczas zapisywania konfiguracji');
+           }
+       }
+
+        function logout() {
+            localStorage.removeItem('staff_pin');
+            localStorage.removeItem('staff_role');
+            localStorage.removeItem('staff_name');
+            currentPin = "";
+            selectedStaff = null;
+            updatePinDisplay();
+
+            selectScreen.style.display = 'block';
+            pinScreen.style.display = 'none';
+            dashboardScreen.style.display = 'none';
+
+            loadStaff(); // Przeładuj listę
+        }
+
+        // ─── AUTO-LOGIN ──────────────────────────────────────────────────
+        window.onload = async () => {
+            await loadStaff();
+
+            const savedPin = localStorage.getItem('staff_pin');
+            const savedRole = localStorage.getItem('staff_role');
+            const savedName = localStorage.getItem('staff_name');
+
+            if (savedPin && savedRole) {
+                currentPin = savedPin;
+                showDashboard(savedRole, savedName || "Pracownik");
+            }
+        };
+
+        // ─── WSPARCIE KLAWIATURY ──────────────────────────────────────────
+        document.addEventListener('keydown', (e) => {
+            if(pinScreen.style.display !== 'none') {
+                if(e.key >= '0' && e.key <= '9') addPin(parseInt(e.key));
+                if(e.key === 'Backspace') delPin();
+                if(e.key === 'Enter') submitPin();
+                if(e.key === 'Escape') backToSelect();
+            }
+        });
+    </script>
+</body>
+</html>

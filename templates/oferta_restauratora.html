@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Oferta Premium — Zjedz.it POS | System dla Twojej Restauracji</title>
+    <meta name="description" content="Profesjonalna oferta systemu POS z AI i wsparciem HaaS (Hardware as a Service) dla nowoczesnych restauracji.">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #f5a623;
+            --gold-light: #ffd166;
+            --gold-dark: #c47d0a;
+            --bg: #08090d;
+            --bg2: #0e1018;
+            --card: #12151f;
+            --card2: #1a1e2e;
+            --border: rgba(245,166,35,0.25);
+            --border2: rgba(255,255,255,0.08);
+            --green: #22c55e;
+            --blue: #3b82f6;
+            --purple: #a855f7;
+            --red: #ef4444;
+            --text: #e8eaf0;
+            --text-muted: #8a8e9e;
+            --radius: 24px;
+            --radius-sm: 14px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ─── SCROLLBAR ─── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 10px; }
+
+        /* ─── NAV ─── */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 6%; height: 80px;
+            background: rgba(8,9,13,0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border2);
+        }
+        .nav-logo {
+            font-size: 1.6em; font-weight: 900; color: var(--gold);
+            letter-spacing: -0.5px;
+        }
+        .nav-logo span { color: var(--text); }
+        .nav-cta {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: #000; padding: 10px 24px;
+            border-radius: 50px; font-weight: 800; font-size: 0.9em;
+            text-decoration: none; transition: 0.3s;
+        }
+        .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(245,166,35,0.2); }
+
+        /* ─── HERO ─── */
+        .hero {
+            position: relative; min-height: 80vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 140px 6% 80px;
+            overflow: hidden;
+        }
+        .hero-bg {
+            position: absolute; inset: 0; z-index: 0;
+            background:
+                radial-gradient(circle at 50% 30%, rgba(245,166,35,0.15), transparent 60%),
+                radial-gradient(circle at 10% 80%, rgba(59,130,246,0.1), transparent 40%);
+        }
+        h1 {
+            font-size: clamp(2.5em, 8vw, 4.5em); font-weight: 900;
+            line-height: 1.1; letter-spacing: -2px; position: relative; z-index: 1;
+        }
+        h1 span.alt { color: var(--gold); }
+        .hero-sub {
+            margin-top: 24px; max-width: 750px; font-size: 1.25em;
+            color: var(--text-muted); position: relative; z-index: 1;
+        }
+
+        /* ─── SECTION ─── */
+        section { padding: 80px 6%; max-width: 1300px; margin: 0 auto; position: relative; }
+        .section-tag {
+            color: var(--gold); font-weight: 800; font-size: 0.85em;
+            text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;
+            display: block;
+        }
+        h2 { font-size: clamp(2em, 5vw, 3em); font-weight: 800; margin-bottom: 40px; }
+
+        /* ─── BENEFITS GRID ─── */
+        .benefits-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        .benefit-card {
+            background: var(--card); border: 1px solid var(--border2);
+            padding: 40px; border-radius: var(--radius);
+            transition: 0.3s;
+        }
+        .benefit-card:hover { border-color: var(--border); transform: translateY(-5px); }
+        .benefit-icon { font-size: 2.5em; margin-bottom: 20px; }
+        .benefit-title { font-size: 1.4em; font-weight: 700; margin-bottom: 12px; }
+        .benefit-desc { color: var(--text-muted); font-size: 1em; line-height: 1.7; }
+
+        /* ─── PRICING ─── */
+        .pricing-wrap {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px; margin-top: 20px;
+        }
+        .price-card {
+            background: var(--card2); border: 2px solid var(--border2);
+            padding: 50px; border-radius: 32px; position: relative;
+            transition: 0.4s ease;
+        }
+        .price-card.featured {
+            border-color: var(--gold);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            transform: scale(1.02);
+            background: linear-gradient(145deg, var(--card2), rgba(245,166,35,0.05));
+        }
+        .badge {
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            background: var(--gold); color: #000; padding: 6px 20px;
+            border-radius: 50px; font-weight: 900; font-size: 0.8em; letter-spacing: 1px;
+        }
+        .plan-name { font-size: 1.8em; font-weight: 800; margin-bottom: 8px; }
+        .plan-price { font-size: 3.5em; font-weight: 900; color: var(--gold); margin-bottom: 2px; letter-spacing: -1px; }
+        .plan-price span { font-size: 0.3em; color: var(--text-muted); font-weight: 400; letter-spacing: 0; }
+        .haas-price { color: var(--green); font-weight: 700; font-size: 1.1em; margin-bottom: 30px; }
+        
+        .feature-list { list-style: none; margin-bottom: 40px; }
+        .feature-list li {
+            padding: 10px 0; display: flex; align-items: flex-start; gap: 12px;
+            color: var(--text); border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .feature-list li::before { content: '✦'; color: var(--gold); font-weight: 900; }
+        .feature-list li.highlight-feat { font-weight: 700; color: var(--gold-light); }
+
+        .btn-order {
+            display: block; width: 100%; text-align: center;
+            background: var(--gold); color: #000; padding: 18px;
+            border-radius: 16px; font-weight: 900; text-decoration: none;
+            font-size: 1.1em; transition: 0.3s;
+        }
+        .btn-order:hover { background: var(--gold-light); transform: scale(1.02); }
+
+        .haas-info {
+            background: rgba(255,255,255,0.03); padding: 24px; border-radius: 16px;
+            margin-top: 30px; border-left: 4px solid var(--blue);
+        }
+        .haas-info h4 { color: var(--blue); font-size: 0.9em; text-transform: uppercase; margin-bottom: 8px; }
+        .haas-info p { font-size: 0.85em; color: var(--text-muted); }
+
+        /* ─── FOOTER ─── */
+        footer {
+            padding: 100px 6% 40px; text-align: center; background: linear-gradient(to top, #0e1018, transparent);
+            border-top: 1px solid var(--border2); margin-top: 80px;
+        }
+        .footer-cta h3 { font-size: 2.5em; font-weight: 900; margin-bottom: 20px; }
+        .contact-grid {
+            display: flex; justify-content: center; gap: 40px; margin-top: 30px; flex-wrap: wrap;
+        }
+        .contact-item { font-size: 1.1em; font-weight: 600; }
+        .contact-item span { color: var(--gold); margin-right: 8px; }
+
+        @media (max-width: 768px) {
+            .pricing-wrap { grid-template-columns: 1fr; }
+            .price-card.featured { transform: none; }
+            h1 { font-size: 3em; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-logo">zjedz<span>.it</span> POS</div>
+        <a href="mailto:kontakt@zjedz.it" class="nav-cta">Poproś o umowę →</a>
+    </nav>
+
+    <div class="hero">
+        <div class="hero-bg"></div>
+        <span class="section-tag">Dedykowana Oferta Biznesowa</span>
+        <h1>Nowa Era Twojej <span class="alt">Restauracji</span></h1>
+        <p class="hero-sub">Zjedz.it POS to nie tylko program do kasy. To inteligentny system operacyjny dla gastronomii, który zwiększa sprzedaż i odciąża personel.</p>
+    </div>
+
+    <section id="korzysci">
+        <div class="section-tag">Dlaczego Zjedz.it?</div>
+        <h2>Korzyści, które <span style="color:var(--gold)">zmieniają zasady gry</span></h2>
+        
+        <div class="benefits-grid">
+            <div class="benefit-card">
+                <div class="benefit-icon">🚀</div>
+                <div class="benefit-title">Wzrost średniego paragonu</div>
+                <div class="benefit-desc">Automatyczny upselling i menu QR pozwalają gościom zamawiać więcej, szybciej i bez presji kelnera. Statystyczny wzrost sprzedaży o 15-25%.</div>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">🧠</div>
+                <div class="benefit-title">AI Storytelling</div>
+                <div class="benefit-desc">Nasze AI (Gemini) generuje unikalne opisy i ciekawostki o Twoich daniach. Goście bawią się podczas przeglądania menu, co buduje lojalność.</div>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">⚡</div>
+                <div class="benefit-title">Błyskawiczna Obsługa</div>
+                <div class="benefit-desc">Zjedz.it działa na Raspberry Pi 5 z dyskiem NVMe. To oznacza zerowe opóźnienia — najszybszy system na rynku, działający również offline.</div>
+            </div>
+            <div class="benefit-card">
+                <div class="benefit-icon">🛠️</div>
+                <div class="benefit-title">Pełna Kontrola (Boss Panel)</div>
+                <div class="benefit-desc">Zarządzaj menu, cenami i pracownikami z dowolnego miejsca na świecie. Otrzymuj inteligentne raporty AI na koniec każdego dnia.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="cennik">
+        <div class="section-tag">Cennik i Pakiety</div>
+        <h2>Wybierz swój <span style="color:var(--gold)">model sukcesu</span></h2>
+
+        <div class="pricing-wrap">
+            <!-- PAKIET BASIC -->
+            <div class="price-card">
+                <div class="plan-name">Pakiet Basic</div>
+                <div class="plan-price">300<span> PLN / msc netto</span></div>
+                <div class="haas-price">+ 70 PLN HaaS Hardware fee</div>
+                
+                <ul class="feature-list">
+                    <li>1x Terminal Edge (Raspberry Pi 5)</li>
+                    <li class="highlight-feat">0,5h konsultacji zdalnej miesięcznie</li>
+                    <li>Nielimitowane menu QR dla gości</li>
+                    <li>System KDS dla kuchni (Kitchen Display)</li>
+                    <li>Wydawka (Panel Expo) dla kelnerów</li>
+                    <li>Obsługa drukarki fiskalnej Elzab/Epson</li>
+                    <li>Podstawowe raporty sprzedaży</li>
+                </ul>
+
+                <a href="#kontakt" class="btn-order">Wybieram Basic</a>
+
+                <div class="haas-info">
+                    <h4>Program HaaS (Hardware as a Service)</h4>
+                    <p>Po 12 miesiącach regularnych wpłat sprzęt przechodzi na Twoją własność. Subskrypcja zostaje obniżona do 300 PLN / msc.</p>
+                </div>
+            </div>
+
+            <!-- PAKIET PRO -->
+            <div class="price-card featured">
+                <div class="badge">NAJPOPULARNIEJSZY</div>
+                <div class="plan-name">Pakiet PRO</div>
+                <div class="plan-price">399<span> PLN / msc netto</span></div>
+                <div class="haas-price">+ 70 PLN HaaS Hardware fee</div>
+                
+                <ul class="feature-list">
+                    <li>1x Terminal Edge (Raspberry Pi 5 NVMe)</li>
+                    <li class="highlight-feat" style="color: var(--gold);">1h dedykowanej konsultacji miesięcznie</li>
+                    <li>Pełny AI Storyteller (Opisy potraw)</li>
+                    <li>AI Profit Architect (Optymalizacja cen)</li>
+                    <li>Rozszerzony Raport AI końca dnia</li>
+                    <li>Zarządzanie wieloma lokalizacjami</li>
+                    <li>Priorytetowe wsparcie techniczne 24/7</li>
+                    <li>Dedykowane szkolenie dla personelu</li>
+                </ul>
+
+                <a href="#kontakt" class="btn-order">Wybieram PRO — Dominuje</a>
+
+                <div class="haas-info">
+                    <h4>Elastyczność po 12 miesiącach</h4>
+                    <p>Postaw na ciągłość: po roku możesz kontynuować z pełnym wsparciem sprzętowym Haas za 320 PLN / msc lub zrezygnować ze wsparcia sprzętu płacąc 300 PLN / msc.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div style="padding: 60px 6%; text-align: center;">
+        <div style="max-width: 800px; margin: 0 auto; background: var(--card); padding: 40px; border-radius: 32px; border: 1px solid var(--border);">
+            <h3 style="margin-bottom: 15px;">Co zyskujesz ze wsparciem HaaS?</h3>
+            <p style="color: var(--text-muted); font-size: 0.95em;">
+                Opcja za <b>320 PLN</b> po 12 miesiącach to gwarancja "Zero Problemów". Jeśli Twoje RPi 5 ulegnie awarii, wyślemy nowe urządzenie w 24h. Masz pewność, że system będzie działał zawsze, a my zajmujemy się aktualizacjami i utrzymaniem infrastruktury edge.
+            </p>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-cta">
+            <h3>Gotowy na rewolucję?</h3>
+            <p style="color: var(--text-muted);">Skontaktuj się z nami i umów wdrożenie w Twoim lokalu jeszcze w tym tygodniu.</p>
+            
+            <div class="contact-grid">
+                <div class="contact-item"><span>📧</span> kontakt@zjedz.it</div>
+                <div class="contact-item"><span>📞</span> +48 123 456 789</div>
+                <div class="contact-item"><span>📍</span> Elvis POS Systems Sp. z o.o.</div>
+            </div>
+        </div>
+        <p style="margin-top: 60px; font-size: 0.8em; color: var(--text-muted);">© 2026 Zjedz.it POS. Wszystkie ceny są cenami netto.</p>
+    </footer>
+
+</body>
+</html>

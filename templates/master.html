@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{ brand }} MASTER PANEL</title>
+    <style>
+        :root {
+            --yellow: #ffeb3b !important; 
+            --yellow-dark: #fbc02d !important;
+            --bg: #0a0a0a;
+            --card: #1a1a1a;
+            --danger: #ff5252;
+            --shadow: 0 4px 30px rgba(251, 192, 45, 0.15);
+        }
+
+        body {
+            background: var(--bg);
+            color: #ececec;
+            font-family: 'Inter', sans-serif;
+            padding: 40px;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid #333;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            color: var(--yellow);
+            margin-top: 0;
+            letter-spacing: 0.5px;
+        }
+
+        p {
+            color: #aaa;
+            font-size: 0.9em;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #000;
+            color: #fff;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--yellow);
+        }
+
+        button {
+            background: var(--yellow);
+            color: #000;
+            font-weight: 800;
+            cursor: pointer;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: var(--yellow-dark);
+            filter: brightness(1.1);
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(251, 192, 45, 0.3);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #ff7676;
+            box-shadow: 0 0 15px rgba(255, 82, 82, 0.3);
+        }
+
+        .btn-secondary {
+            background: #333;
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: #444;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid #333;
+            margin: 20px 0;
+        }
+
+        a.button-link {
+            display: block;
+            text-align: center;
+            background: var(--yellow);
+            color: #000;
+            padding: 15px;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        #login-error {
+            color: var(--danger);
+            margin-top: 12px;
+            font-weight: bold;
+            font-size: 0.9em;
+            display: none;
+            text-align: center;
+        }
+
+        #pin-input {
+            text-align: center;
+            font-size: 2em;
+            letter-spacing: 12px;
+            font-weight: 900;
+            color: var(--yellow);
+        }
+
+        /* Custom Checkbox Switch */
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--yellow); }
+        input:checked + .slider:before { transform: translateX(26px); background-color: black; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header style="text-align: center; margin-bottom: 40px;">
+            <div style="background: var(--yellow); color: #000; display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: 900; margin-bottom: 10px; font-size: 0.8em; letter-spacing: 2px; box-shadow: 0 0 15px rgba(251, 192, 45, 0.4);">ELVIS 2.0 | STABLE</div>
+            <h1>{{ brand }} <span style="font-weight: 400; color: #666;">|</span> MASTER CONSOLE</h1>
+            <p>Centralna administracja systemem POS</p>
+        </header>
+
+        <div id="login-section" class="card" style="text-align: center; max-width: 400px; margin: 0 auto;">
+            <h3>🔐 i co Autoryzacja Master</h3>
+            <p>Wprowadź PIN, aby uzyskać dostęp do narzędzi administracyjnych.</p>
+            <input type="password" id="pin-input" placeholder="•••••" maxlength="8" autocomplete="off">
+            <button onclick="loginWithPin()">ZALOGUJ</button>
+            <div id="login-error">Nieprawidłowy PIN!</div>
+        </div>
+
+        <div id="dashboard-section" class="hidden">
+            <div class="card" style="border-left: 4px solid var(--yellow);">
+                <h2 id="welcome-text">Panel Sterowania</h2>
+
+                <!-- Mode Toggle -->
+                <div class="card" style="margin-top: 20px; border-left: 4px solid #4a90e2;">
+                    <h3>⚙️ Tryb Systemu</h3>
+                    <p>Ustaw tryb działania systemu:</p>
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button id="restaurant-mode-btn" class="btn-secondary" onclick="toggleMode('restaurant')">Tryb
+                            Restauracji</button>
+                        <button id="foodtruck-mode-btn" class="btn-secondary" onclick="toggleMode('foodtruck')">Tryb
+                            Food Truck</button>
+                    </div>
+                    <div id="mode-indicator"
+                        style="margin-top: 15px; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold;">
+                        Aktualny tryb: <span id="current-mode">{{ system_mode|capitalize if system_mode else 'Restaurant' }}</span>
+                    </div>
+                </div>
+
+                <!-- NFC Toggle -->
+                <div class="card" style="margin-top: 20px; border-left: 4px solid #fbc02d;">
+                    <h3>🛡️ Autoryzacja Personelu (NFC/PIN)</h3>
+                    <p>Włącz funkcję locka (wymagaj logowania personelu do KDS i Wydawki):</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px; background: #000; padding: 15px; border-radius: 12px; border: 1px solid #333;">
+                        <span id="nfc-status-text" style="font-weight: bold; color: var(--yellow);">Ładowanie stanu...</span>
+                        <label class="switch">
+                            <input type="checkbox" id="nfc-toggle-checkbox" onchange="toggleNFCStatus(this.checked)">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Live Sessions Dashboard -->
+                <div class="card" style="margin-top:20px; border-top: 4px solid var(--yellow);">
+                    <h3>📊 Aktywne Sesje (1-30)</h3>
+                    <p>Podgląd online wszystkich stanowisk. Kliknij na numer, aby wyświetlić szybkie akcje.</p>
+                    <div id="sessions-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 15px;">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Recent Orders Log -->
+                <div class="card" style="margin-top:20px; border-top: 4px solid #4caf50;">
+                    <h3>📜 Ostatnie Zamówienia (Log)</h3>
+                    <p>Ostatnie 10 pozycji przesłanych do systemu.</p>
+                    <div id="recent-orders-log" style="margin-top: 15px; font-family: monospace; font-size: 0.85em; background: #000; padding: 10px; border-radius: 8px; border: 1px solid #333; max-height: 250px; overflow-y: auto;">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="card" id="cloud-sync-zone" style="border-left: 4px solid #9c27b0;">
+                <h3>☁️ Chmura & Synchronizacja</h3>
+                <p>Połącz ten terminal z centralnym panelem zjedz.it. Podaj adres swojej instancji (np. <b>bar.zjedz.it</b>) oraz numer z naklejki serwisowej.</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 0.7em; color: #888; text-transform: uppercase;">Adres Serwera</label>
+                        <input type="text" id="server-address" placeholder="np. bar.zjedz.it" value="bar.zjedz.it">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.7em; color: #888; text-transform: uppercase;">ID Terminalu (Label)</label>
+                        <input type="text" id="device-key" placeholder="np. Elvis_KWI_0326">
+                    </div>
+                </div>
+                <button onclick="saveConfiguration()">🔗 POŁĄCZ Z CHMURĄ</button>
+            </div>
+
+            <div class="card" id="management-zone">
+                <h3>🔑 Zarządzanie Uprawnieniami</h3>
+                <p>Ustaw nowy PIN dla roli Boss (Admin). Wymaga podania aktualnego PINu admina dla weryfikacji.</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <input type="password" id="current-admin-pin" placeholder="Aktualny PIN Boss" maxlength="8">
+                    <input type="password" id="new-boss-pin" placeholder="Nowy PIN Boss" maxlength="8">
+                </div>
+                <button onclick="setBossPassword()">USTAW NOWE HASŁO BOSS</button>
+            </div>
+
+            <div class="card" id="maintenance-zone">
+                <h3>🧹 Konserwacja Systemu</h3>
+                <p>Przygotuj system na nowy dzień. Czyści wszystkie zamówienia i zwalnia stoliki.</p>
+                <button class="btn-danger" onclick="resetDay()">KOMPLEKSOWE CZYSZCZENIE DNIA</button>
+            </div>
+
+            <div class="card" id="danger-zone">
+                <h3 style="color:var(--danger)">☢️ Strefa Krytyczna</h3>
+                <p>Narzędzia do całkowitego resetowania bazy danych i inicjalizacji projektu.</p>
+                <button class="btn-danger" onclick="wipeDatabase()">Wyczyść Całą Bazę Danych (WIPE)</button>
+                <hr>
+                <h3>🏗️ Inicjalizacja Projektu</h3>
+                <p>Buduj nową bazę Firestore z domyślnymi produktami, stolikami i konfiguracją personelu.</p>
+                <button onclick="initDatabase()">Zainicjalizuj Bazę Danych (BASE)</button>
+
+                <hr>
+                <h3>🔌 JSON API &amp; Backup</h3>
+                <p>Eksportuj lub importuj całą zawartość bazy danych w formacie JSON.</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="btn-secondary" onclick="exportJSON()">Pobierz Backup (JSON)</button>
+                    <button class="btn-secondary"
+                        onclick="document.getElementById('import-section').classList.toggle('hidden')">Opcje
+                        Importu</button>
+                </div>
+
+                <div id="import-section" class="hidden"
+                    style="margin-top: 20px; border-top: 1px dashed #444; padding-top: 15px;">
+                    <textarea id="import-data" placeholder="Wklej tutaj surowe dane JSON do przywrócenia..."></textarea>
+                    <button class="btn-secondary" onclick="importJSON()">Wykonaj Import z JSON</button>
+                </div>
+            </div>
+
+
+
+            <div class="card" style="background: linear-gradient(145deg, #1a1a1a, #252525);">
+                <h3>🚀 Portal Operacyjny</h3>
+                <p>Przejdź do głównego portalu obsługi (Waiter, KDS, Boss), aby zarządzać bieżącą pracą lokalu.</p>
+                <a href="/portal" class="button-link">OTWÓRZ PORTAL WYDAWKI / KUCHNI</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const myRole = "master";
+
+        document.getElementById('pin-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') loginWithPin();
+        });
+        
+        window.addEventListener('load', () => {
+            if (sessionStorage.getItem('master_logged_in') === 'true') {
+                const name = sessionStorage.getItem('master_name') || 'Master';
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('dashboard-section').classList.remove('hidden');
+                document.getElementById('welcome-text').innerText = `Witaj, ${name} 👑`;
+                showDashboard();
+                loadNFCStatus();
+            }
+        });
+
+        async function loginWithPin() {
+            const pin = document.getElementById('pin-input').value;
+            const errEl = document.getElementById('login-error');
+            errEl.style.display = 'none';
+            const res = await fetch('/api/auth/staff_login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: pin })
+            });
+            const data = await res.json();
+            if (data.ok && data.role === 'master') {
+                sessionStorage.setItem('master_logged_in', 'true');
+                sessionStorage.setItem('master_name', data.name);
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('dashboard-section').classList.remove('hidden');
+                document.getElementById('welcome-text').innerText = `Witaj, ${data.name} 👑`;
+                showDashboard();
+                loadNFCStatus();
+            } else {
+                errEl.style.display = 'block';
+                document.getElementById('pin-input').value = '';
+                document.getElementById('pin-input').focus();
+            }
+        }
+
+        async function loadDashboardData() {
+            try {
+                const [lRes, aRes, oRes] = await Promise.all([
+                    fetch('/api/get_layout').then(r => r.json()),
+                    fetch('/api/active_tables').then(r => r.json()),
+                    fetch('/api/all_orders').then(r => r.json())
+                ]);
+                renderSessions(lRes, aRes.tables || [], oRes.orders || []);
+            } catch (e) {
+                console.error("Dashboard refresh failed", e);
+            }
+        }
+
+        function renderSessions(layout, actives, orders) {
+            const grid = document.getElementById('sessions-grid');
+            const logBox = document.getElementById('recent-orders-log');
+            if(!grid) return;
+            grid.innerHTML = '';
+
+            if(logBox) {
+                const recent = orders.slice(0, 10);
+                logBox.innerHTML = recent.map(o => `
+                    <div style="border-bottom: 1px solid #222; padding: 5px 0;">
+                        <span style="color:#666;">[${new Date(o.timestamp).toLocaleTimeString()}]</span>
+                        <span style="color:var(--yellow); font-weight:bold;">#${o.table_number}</span>: 
+                        <span style="color:#fff;">${o.burger_name}</span> 
+                        <span style="color:${o.to_kitchen !== false ? '#4caf50' : '#f44336'}; font-size:0.8em;">(KDS: ${o.to_kitchen !== false})</span>
+                        <span style="color:#444; font-size:0.75em; float:right;">SID: ${o.session_id?.substring(0,6)}</span>
+                    </div>
+                `).join('') || '<div style="color:#444;">Brak zamówień...</div>';
+            }
+
+            const activeMap = {};
+            actives.forEach(t => { activeMap[String(t._id)] = t; });
+
+            layout.tables.forEach((t, index) => {
+                const id = String(t.id || t._id || (index + 1));
+                const info = activeMap[id];
+                const isBusy = !!info;
+                // Filtr: pokaż wszystko co nie jest zamknięte
+                const tableOrders = orders.filter(o => String(o.table_number) === id && o.status !== 'closed');
+                
+                const card = document.createElement('div');
+                card.className = 'card session-card';
+                card.style.padding = '8px';
+                card.style.margin = '0';
+                card.style.fontSize = '0.85em';
+                card.style.textAlign = 'center';
+                card.style.border = isBusy ? '1px solid var(--yellow)' : '1px solid #222';
+                card.style.background = isBusy ? 'rgba(255,193,7,0.1)' : '#080808';
+                card.style.opacity = isBusy ? '1' : '0.4';
+                
+                if (tableOrders.some(o => o.status === 'ready')) card.style.border = '1px solid #4caf50';
+                else if (tableOrders.some(o => o.status === 'preparing')) card.style.border = '1px solid #ff9800';
+
+                card.innerHTML = `
+                    <div style="font-weight:900; font-size:1.1em; color:${isBusy ? 'var(--yellow)' : '#555'}">#${id}</div>
+                    <div style="font-size:0.7em; margin-top:2px;">
+                        ${tableOrders.length > 0 ? `<b>${tableOrders.length} poz.</b>` : '---'}
+                    </div>
+                    ${isBusy ? `<div onclick="confirmClearTable('${id}')" style="cursor:pointer; color:#888; font-size:0.6em; margin-top:4px; text-decoration:underline;">RESET</div>` : ''}
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        async function confirmClearTable(id) {
+            if(!confirm(`Czy na pewno chcesz zresetować stolik/numer ${id}?`)) return;
+            try {
+                const res = await fetch(`/api/admin/clear_table/${id}`, { method: 'POST' });
+                const data = await res.json();
+                if(data.ok) loadDashboardData();
+                else alert("Błąd: " + data.error);
+            } catch(e) { alert("Błąd połączenia."); }
+        }
+
+        function showDashboard() {
+            loadDashboardData();
+            loadConfiguration();
+            if(!window.dashboardInterval) window.dashboardInterval = setInterval(loadDashboardData, 5000);
+        }
+
+        async function loadNFCStatus() {
+            try {
+                const res = await fetch('/api/master/get_nfc_status');
+                const data = await res.json();
+                const checkbox = document.getElementById('nfc-toggle-checkbox');
+                if (checkbox) checkbox.checked = data.nfc_required;
+                const text = document.getElementById('nfc-status-text');
+                if (text) text.innerText = data.nfc_required ? "🔐 NFC/PIN WYMAGANE" : "🔓 NFC/PIN WYŁĄCZONE (DEBUG)";
+            } catch (e) { console.error(e); }
+        }
+
+        async function toggleNFCStatus(required) {
+            try {
+                const formData = new FormData();
+                formData.append('nfc_required', required);
+                const res = await fetch('/api/master/toggle_nfc', { method: 'POST', body: formData });
+                const data = await res.json();
+                loadNFCStatus();
+            } catch (e) { alert("Błąd zapisu."); }
+        }
+
+        async function loadConfiguration() {
+            try {
+                const res = await fetch('/api/config/local?auth_role=' + myRole);
+                const config = await res.json();
+                if (config.server_address && document.getElementById('server-address')) document.getElementById('server-address').value = config.server_address;
+                if (config.device_key && document.getElementById('device-key')) document.getElementById('device-key').value = config.device_key;
+            } catch (e) {}
+        }
+
+        async function saveConfiguration() {
+            const server = document.getElementById('server-address').value;
+            const key = document.getElementById('device-key').value;
+            
+            try {
+                const res = await fetch('/api/config/local?auth_role=' + myRole, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        server_address: server,
+                        device_key: key
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("Konfiguracja chmury zapisana pomyślnie. Terminal jest gotowy do pracy.");
+                } else {
+                    alert("Błąd: " + data.error);
+                }
+            } catch (e) {
+                alert("Błąd połączenia z API.");
+            }
+        }
+
+        async function setBossPassword() {
+            const admin_pin = document.getElementById('current-admin-pin').value;
+            const new_pin = document.getElementById('new-boss-pin').value;
+            const formData = new FormData();
+            formData.append('admin_pin', admin_pin);
+            formData.append('new_pin', new_pin);
+            const res = await fetch('/api/master/set_admin_password', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.ok) alert("Hasło zaktualizowane."); else alert("Błąd: " + data.error);
+        }
+
+        async function resetDay() {
+            if (!confirm("⚠️ UWAGA: Czyścisz wszystkie zamówienia. Kontynuować?")) return;
+            await fetch('/api/admin/reset_day', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ auth_role: myRole }) });
+            loadDashboardData();
+        }
+
+        async function wipeDatabase() {
+            if (!confirm("KRYTYCZNE: Czy na pewno chcesz USUNĄĆ CAŁĄ BAZĘ? Menu, stoliki, zamówienia przepadną!")) return;
+            if (!confirm("POTWIERDŹ PONOWNIE: BAZA ZOSTANIE WYCZYSZCZONA.")) return;
+            const res = await fetch('/api/admin/wipe_db', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ auth_role: myRole })
+            });
+            const data = await res.json();
+            if (data.ok) alert("Baza danych została pomyślnie wyczyszczona.");
+            else alert("Błąd: " + data.error);
+        }
+
+        async function initDatabase() {
+            if (!confirm("Czy chcesz zainicjalizować bazę domyślnymi danymi? To może nadpisać istniejące rekordy.")) return;
+            const res = await fetch('/api/admin/init_db', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ auth_role: myRole })
+            });
+            const data = await res.json();
+            if (data.ok) alert("Baza zainicjalizowana pomyślnie.");
+            else alert("Błąd: " + data.error);
+        }
+
+        async function exportJSON() {
+            const res = await fetch(`/api/admin/export_db?auth_role=${myRole}`);
+            if (!res.ok) { alert("Błąd eksportu - brak uprawnień"); return; }
+            const data = await res.json();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ELVIS_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function importJSON() {
+            const raw = document.getElementById('import-data').value;
+            if (!raw) return alert("Wklej dane JSON najpierw!");
+            if (!confirm("Czy na pewno chcesz ZAIMPORTOWAĆ dane? To nadpisze istniejącą konfigurację!")) return;
+            try {
+                const payload = JSON.parse(raw);
+                const res = await fetch('/api/admin/import_db', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ auth_role: myRole, payload: payload })
+                });
+                const data = await res.json();
+                if (data.ok) alert("Dane zaimportowane pomyślnie.");
+                else alert("Błąd importu: " + data.error);
+            } catch (e) {
+                alert("Błąd składni JSON: " + e.message);
+            }
+        }
+
+        async function toggleMode(mode) {
+            try {
+                const res = await fetch('/api/master/toggle_mode?auth_role=' + myRole, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: mode })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    currentMode = mode;
+                    updateModeDisplay();
+                    alert(`Tryb zmieniony na: ${mode === 'foodtruck' ? 'Food Truck' : 'Restauracja'}`);
+                } else {
+                    alert('Błąd podczas zmiany trybu');
+                }
+            } catch (error) {
+                console.error('Error toggling mode:', error);
+                alert('Błąd sieci podczas zmiany trybu');
+            }
+        }
+
+        function updateModeDisplay() {
+            document.getElementById('restaurant-mode-btn').className = 'btn-secondary';
+            document.getElementById('foodtruck-mode-btn').className = 'btn-secondary';
+            if (currentMode === 'restaurant') {
+                document.getElementById('restaurant-mode-btn').style.background = 'var(--yellow)';
+                document.getElementById('foodtruck-mode-btn').style.background = '#333';
+                document.getElementById('restaurant-mode-btn').style.color = '#000';
+                document.getElementById('foodtruck-mode-btn').style.color = '#fff';
+            } else {
+                document.getElementById('restaurant-mode-btn').style.background = '#333';
+                document.getElementById('foodtruck-mode-btn').style.background = 'var(--yellow)';
+                document.getElementById('restaurant-mode-btn').style.color = '#fff';
+                document.getElementById('foodtruck-mode-btn').style.color = '#000';
+            }
+            document.getElementById('current-mode').textContent = currentMode === 'foodtruck' ? 'Food Truck' : 'Restauracja';
+        }
+    </script>
+</body>
+
+</html>

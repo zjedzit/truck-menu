@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>zjedz.it | Inteligentny system POS dla nowoczesnej gastronomii</title>
+    <meta name="description" content="Inteligentny system POS od zjedz.it – nowoczesny system dla restauracji, foodtrucków i lokali premium. QR menu, POS, KDS, wydawka, fiskalizacja, raporty i inteligentna warstwa AI." />
+    <style>
+        :root {
+            --gold: #d4af37;
+            --gold-soft: rgba(212, 175, 55, 0.14);
+            --bg: #050505;
+            --bg-2: #0d0d0d;
+            --bg-3: #121212;
+            --card: rgba(255,255,255,0.04);
+            --text: #f1f1f1;
+            --muted: #b2b2b2;
+            --muted-2: #8e8e8e;
+            --border: rgba(255,255,255,0.08);
+            --shadow: 0 20px 60px rgba(0,0,0,0.35);
+            --radius: 28px;
+            --max: 1280px;
+        }
+
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            margin: 0;
+            font-family: Inter, Arial, sans-serif;
+            background:
+                radial-gradient(circle at top, rgba(212,175,55,0.08), transparent 24%),
+                linear-gradient(180deg, #0a0a0a 0%, #050505 100%);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .container {
+            width: min(var(--max), calc(100% - 40px));
+            margin: 0 auto;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(5,5,5,0.82);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-inner {
+            min-height: 82px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--gold);
+            letter-spacing: -0.04em;
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            flex-wrap: wrap;
+        }
+
+        .nav a.link {
+            color: #ececec;
+            font-size: 0.98rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+            padding: 0 22px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            font-weight: 700;
+            transition: 0.25s ease;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--gold);
+            color: #111;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 40px rgba(212,175,55,0.18);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #fff;
+            border-color: rgba(255,255,255,0.18);
+        }
+
+        .btn-secondary:hover {
+            color: var(--gold);
+            border-color: var(--gold);
+        }
+
+        .hero {
+            padding: 84px 0 56px;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.12fr 0.88fr;
+            gap: 34px;
+            align-items: stretch;
+        }
+
+        .hero-copy,
+        .hero-card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+            border: 1px solid var(--border);
+            border-radius: 34px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-copy {
+            padding: 54px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: var(--gold-soft);
+            color: var(--gold);
+            border: 1px solid rgba(212,175,55,0.22);
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 {
+            margin: 0 0 18px;
+            font-size: clamp(2.5rem, 6vw, 4.8rem);
+            line-height: 1.02;
+            letter-spacing: -0.05em;
+        }
+
+        .hero h1 span {
+            color: var(--gold);
+        }
+
+        .hero p {
+            font-size: 1.08rem;
+            color: var(--muted);
+            max-width: 760px;
+            margin: 0 0 28px;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .stat {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 20px;
+            padding: 18px;
+        }
+
+        .stat strong {
+            display: block;
+            font-size: 1.2rem;
+            color: var(--gold);
+            margin-bottom: 6px;
+        }
+
+        .stat span {
+            color: var(--muted-2);
+            font-size: 0.94rem;
+        }
+
+        .hero-card {
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .dashboard {
+            background: linear-gradient(180deg, #161616 0%, #101010 100%);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 26px;
+            overflow: hidden;
+        }
+
+        .dashboard-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .dashboard-top strong {
+            font-size: 1rem;
+        }
+
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: #36d97c;
+            box-shadow: 0 0 20px rgba(54,217,124,0.6);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            padding: 18px;
+        }
+
+        .mini-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 20px;
+            padding: 18px;
+        }
+
+        .mini-card h3 {
+            margin: 0 0 8px;
+            font-size: 1rem;
+        }
+
+        .mini-card p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.94rem;
+        }
+
+        .section {
+            padding: 34px 0;
+        }
+
+        .section-head {
+            max-width: 820px;
+            margin-bottom: 28px;
+        }
+
+        .section-head h2 {
+            margin: 0 0 12px;
+            font-size: clamp(2rem, 4vw, 3rem);
+            line-height: 1.08;
+            letter-spacing: -0.04em;
+        }
+
+        .section-head p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 1.04rem;
+        }
+
+        .grid-2, .grid-3, .grid-4 {
+            display: grid;
+            gap: 22px;
+        }
+
+        .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+        .card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            box-shadow: var(--shadow);
+            transition: 0.25s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(212,175,55,0.28);
+        }
+
+        .tag {
+            display: inline-flex;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: rgba(212,175,55,0.12);
+            color: var(--gold);
+            border: 1px solid rgba(212,175,55,0.18);
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            margin-bottom: 14px;
+        }
+
+        .card h3 {
+            margin: 0 0 10px;
+            font-size: 1.28rem;
+        }
+
+        .card p {
+            margin: 0 0 16px;
+            color: var(--muted);
+        }
+
+        .card ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .card li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 10px 0;
+            color: #d8d8d8;
+        }
+
+        .card li::before {
+            content: "•";
+            color: var(--gold);
+            font-weight: 900;
+        }
+
+        .dark-band {
+            margin: 34px 0;
+            padding: 36px;
+            border-radius: 32px;
+            background: linear-gradient(180deg, #111 0%, #0c0c0c 100%);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .architecture-box {
+            background: #101010;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 28px;
+            padding: 26px;
+        }
+
+        .stack-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .stack-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 20px;
+            padding: 18px;
+        }
+
+        .stack-item h4 {
+            margin: 0 0 8px;
+            color: var(--gold);
+            font-size: 1rem;
+        }
+
+        .stack-item p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .story-demo {
+            background:
+                radial-gradient(circle at top right, rgba(212,175,55,0.08), transparent 25%),
+                linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
+            border: 1px solid rgba(212,175,55,0.18);
+            border-radius: 28px;
+            padding: 26px;
+        }
+
+        .story-bubble {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 22px;
+            padding: 18px;
+            margin-top: 16px;
+            color: #f3f3f3;
+        }
+
+        .report-box {
+            background:
+                radial-gradient(circle at top right, rgba(212,175,55,0.08), transparent 25%),
+                linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
+            border: 1px solid rgba(212,175,55,0.18);
+            border-radius: 30px;
+            padding: 32px;
+            box-shadow: var(--shadow);
+        }
+
+        .report-meta {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+        .report-kpi {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 18px;
+            padding: 16px;
+        }
+
+        .report-kpi strong {
+            display: block;
+            color: var(--gold);
+            margin-bottom: 6px;
+        }
+
+        .report-kpi span {
+            color: var(--muted-2);
+            font-size: 0.92rem;
+        }
+
+        .report-body h3 {
+            margin-bottom: 8px;
+        }
+
+        .report-body p,
+        .report-body li {
+            color: #ddd;
+        }
+
+        .cta {
+            padding: 42px;
+            border-radius: 34px;
+            background:
+                radial-gradient(circle at top right, rgba(212,175,55,0.12), transparent 30%),
+                linear-gradient(180deg, #111, #0a0a0a);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .cta h2 {
+            margin: 0 0 10px;
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            line-height: 1.06;
+        }
+
+        .cta p {
+            margin: 0;
+            color: var(--muted);
+            max-width: 760px;
+        }
+
+        .legal-box {
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 32px;
+            box-shadow: var(--shadow);
+        }
+
+        .legal-box h3 {
+            margin-top: 0;
+            color: var(--gold);
+        }
+
+        .legal-box h4 {
+            margin: 22px 0 8px;
+        }
+
+        .legal-box p,
+        .legal-box li {
+            color: #d8d8d8;
+        }
+
+        .legal-box ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 28px 0 42px;
+            color: var(--muted-2);
+        }
+
+        .footer-inner {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--gold);
+        }
+
+        #cookie-banner {
+            position: fixed;
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+            z-index: 2000;
+            display: none;
+            background: rgba(16,16,16,0.96);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 22px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            padding: 18px;
+            backdrop-filter: blur(10px);
+        }
+
+        .cookie-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .cookie-text {
+            flex: 1 1 540px;
+            color: #ddd;
+            font-size: 0.96rem;
+        }
+
+        .cookie-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 1100px) {
+            .hero-grid,
+            .grid-4,
+            .grid-3,
+            .grid-2,
+            .stack-grid,
+            .report-meta {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .header-inner {
+                padding: 14px 0;
+                align-items: flex-start;
+            }
+
+            .hero {
+                padding-top: 42px;
+            }
+
+            .hero-copy,
+            .hero-card,
+            .dark-band,
+            .card,
+            .cta,
+            .report-box,
+            .legal-box,
+            .story-demo {
+                padding: 22px;
+            }
+
+            .dashboard-grid,
+            .hero-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-inner">
+            <a href="#" class="logo">zjedz.it</a>
+            <nav class="nav" aria-label="Nawigacja główna">
+                <a class="link" href="#system">System</a>
+                <a class="link" href="#Inteligentny system">Inteligentny system POS</a>
+                <a class="link" href="#ai">AI</a>
+                <a class="link" href="#raport">Raporty</a>
+                <a class="link" href="#prawo">Informacje prawne</a>
+                <a class="btn btn-primary" href="mailto:hajdukiewicz@gmail.com?subject=Zapytanie%20o%20Inteligentny system%20POS">Umów demo</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container hero-grid">
+                <div class="hero-copy">
+                    <div class="eyebrow">Nowoczesny system POS dla gastronomii</div>
+                    <h1>Jedna platforma. <span>Pełna kontrola</span> nad restauracją.</h1>
+                    <p>
+                        zjedz.it to profesjonalny system dla restauracji, lokali premium, foodtrucków i konceptów eventowych.
+                        Łączy sprzedaż, obsługę stolików, zamówienia QR, kuchnię, wydawkę, fiskalizację i inteligentną warstwę AI
+                        w jednym środowisku operacyjnym.
+                    </p>
+                    <div class="hero-actions">
+                        <a class="btn btn-primary" href="mailto:hajdukiewicz@gmail.com?subject=Chcę%20demo%20zjedz.it">Skontaktuj się</a>
+                        <a class="btn btn-secondary" href="#Inteligentny system">Poznaj Inteligentny system POS</a>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="stat">
+                            <strong>QR + POS</strong>
+                            <span>Obsługa gościa, sali i zamówień w jednym systemie</span>
+                        </div>
+                        <div class="stat">
+                            <strong>KDS + Wydawka</strong>
+                            <span>Lepsza komunikacja między salą, kuchnią i odbiorem</span>
+                        </div>
+                        <div class="stat">
+                            <strong>AI Layer</strong>
+                            <span>Raporty, insighty i angażujące treści po zakupie</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-card">
+                    <div class="dashboard">
+                        <div class="dashboard-top">
+                            <strong>Inteligentny system POS – środowisko operacyjne lokalu</strong>
+                            <span class="live-dot" aria-hidden="true"></span>
+                        </div>
+                        <div class="dashboard-grid">
+                            <div class="mini-card">
+                                <h3>Menu QR dla gości</h3>
+                                <p>Gość przegląda menu, zamawia szybciej i może płynnie przejść przez cały proces zakupowy.</p>
+                            </div>
+                            <div class="mini-card">
+                                <h3>Panel kelnerski</h3>
+                                <p>Obsługa sali, status stolików, rozliczenia i uporządkowany przepływ pracy personelu.</p>
+                            </div>
+                            <div class="mini-card">
+                                <h3>KDS i wydawka</h3>
+                                <p>Elektroniczne bony, statusy przygotowania i lepsza organizacja pracy kuchni.</p>
+                            </div>
+                            <div class="mini-card">
+                                <h3>AI po zakupie</h3>
+                                <p>Po opłaceniu zamówienia system może wygenerować krótką, zabawną historię o zamówionych pozycjach.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:18px; color: var(--muted); font-size:0.96rem;">
+                        Inteligentny system POS opiera się na centralnym backendzie, pracy w czasie rzeczywistym, rolach operacyjnych
+                        i integracji z warstwą lokalną dla urządzeń oraz fiskalizacji.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="system" class="section">
+            <div class="container">
+                <div class="section-head">
+                    <div class="eyebrow">Dla gastronomii, która chce rosnąć</div>
+                    <h2>System, który obsługuje cały lokal, a nie tylko kasę</h2>
+                    <p>
+                        Inteligentny system POS został zaprojektowany jako kompletne środowisko pracy dla restauracji.
+                        Obejmuje doświadczenie gościa, operacje sali, kuchnię, wydawkę, zarządzanie urządzeniami,
+                        dane sprzedażowe i analitykę wspierającą właściciela w podejmowaniu decyzji.
+                    </p>
+                </div>
+
+                <div class="grid-4">
+                    <article class="card">
+                        <div class="tag">RESTAURACJE</div>
+                        <h3>QR Table Service</h3>
+                        <p>Gość skanuje kod przy stoliku, przegląda menu i zamawia w nowoczesnym, wygodnym flow.</p>
+                        <ul>
+                            <li>Menu mobilne dopasowane do telefonu</li>
+                            <li>Szybsze rozpoczęcie zamówienia</li>
+                            <li>Lepsze doświadczenie gościa</li>
+                        </ul>
+                    </article>
+
+                    <article class="card">
+                        <div class="tag">FOODTRUCKI / EVENTY</div>
+                        <h3>QR Fast-Track</h3>
+                        <p>Przyspieszenie obsługi w miejscach o dużym ruchu i lepsza kontrola nad kolejką zamówień.</p>
+                        <ul>
+                            <li>Większa przepustowość sprzedaży</li>
+                            <li>Czytelny podział przyjęcia i wydania</li>
+                            <li>Mniej chaosu w godzinach szczytu</li>
+                        </ul>
+                    </article>
+
+                    <article class="card">
+                        <div class="tag">POS / FISKAL</div>
+                        <h3>Centralny system sprzedaży</h3>
+                        <p>Jeden punkt kontroli nad sprzedażą, zamówieniami, zespołem i komunikacją z zapleczem.</p>
+                        <ul>
+                            <li>Obsługa wielu ról i widoków</li>
+                            <li>Historia statusów zamówień</li>
+                            <li>Integracja z urządzeniami lokalnymi</li>
+                        </ul>
+                    </article>
+
+                    <article class="card">
+                        <div class="tag">KUCHNIA / EXPO</div>
+                        <h3>KDS i wydawka</h3>
+                        <p>Porządek operacyjny na kuchni i przy odbiorze zamówień – bez papierowego chaosu.</p>
+                        <ul>
+                            <li>Elektroniczne bony</li>
+                            <li>Statusy przygotowania</li>
+                            <li>Lepsza synchronizacja zespołu</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="Inteligentny system" class="section">
+            <div class="container">
+                <div class="dark-band">
+                    <div class="section-head">
+                        <div class="eyebrow">Inteligentny system POS</div>
+                        <h2>Profesjonalny system dla restauracji z architekturą cloud + edge</h2>
+                        <p>
+                            Inteligentny system POS łączy nowoczesny frontend dla różnych ról operacyjnych z centralnym backendem
+                            oraz lokalną warstwą sprzętową. Dzięki temu restauracja dostaje elastyczność chmury,
+                            aktualizacje w czasie rzeczywistym i możliwość stabilnej pracy z urządzeniami na miejscu. :contentReference[oaicite:1]{index=1}
+                        </p>
+                    </div>
+
+                    <div class="grid-3">
+                        <article class="card">
+                            <h3>Gość i doświadczenie zamówienia</h3>
+                            <p>
+                                Warstwa klienta działa lekko, szybko i wygodnie. Model session-based pozwala płynnie
+                                rozpocząć zamówienie bez skomplikowanego procesu logowania, co dobrze sprawdza się w gastronomii. :contentReference[oaicite:2]{index=2}
+                            </p>
+                            <ul>
+                                <li>Anonimowa sesja klienta</li>
+                                <li>Szybkie wejście do menu</li>
+                                <li>Naturalny proces składania zamówienia</li>
+                            </ul>
+                        </article>
+
+                        <article class="card">
+                            <h3>Personel i podział ról</h3>
+                            <p>
+                                System rozdziela role operacyjne na panel gościa, panel kelnerski, KDS, wydawkę
+                                i panel administracyjny. Dzięki temu każdy dział pracuje w swoim kontekście. :contentReference[oaicite:3]{index=3}
+                            </p>
+                            <ul>
+                                <li>Pracownicy logują się PIN-em</li>
+                                <li>Admin może korzystać z Google OAuth</li>
+                                <li>Każdy moduł wspiera konkretne zadania</li>
+                            </ul>
+                        </article>
+
+                        <article class="card">
+                            <h3>Real-time i operacja lokalu</h3>
+                            <p>
+                                Backend zarządza stanem koszyka, zamówień i autoryzacją, a zdarzenia są rozsyłane
+                                w czasie rzeczywistym do właściwych ekranów i urządzeń. :contentReference[oaicite:4]{index=4}
+                            </p>
+                            <ul>
+                                <li>Aktualizacje typu update, receipt i call_waiter</li>
+                                <li>Spójność danych między modułami</li>
+                                <li>Podstawa pod analitykę i automatyzację</li>
+                            </ul>
+                        </article>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container">
+                <div class="section-head">
+                    <div class="eyebrow">Architektura</div>
+                    <h2>Stabilny fundament pod rozwój produktu</h2>
+                    <p>
+                        Fundament Inteligentny system POS obejmuje centralny backend oparty o FastAPI, hostowany na Google Cloud Run,
+                        bazę Firestore, komunikację real-time oraz lokalny gateway na Raspberry Pi do obsługi urządzeń
+                        i integracji fizycznych. :contentReference[oaicite:5]{index=5}
+                    </p>
+                </div>
+
+                <div class="architecture-box">
+                    <div class="stack-grid">
+                        <div class="stack-item">
+                            <h4>Cloud Backend</h4>
+                            <p>FastAPI pełni rolę centralnego huba danych i logiki systemowej, zarządza autoryzacją, zamówieniami i stanem koszyka. :contentReference[oaicite:6]{index=6}</p>
+                        </div>
+                        <div class="stack-item">
+                            <h4>Baza danych</h4>
+                            <p>Firestore przechowuje menu, zamówienia, aktywne stoliki oraz rejestr urządzeń i telemetrii. :contentReference[oaicite:7]{index=7}</p>
+                        </div>
+                        <div class="stack-item">
+                            <h4>Frontend</h4>
+                            <p>Interfejs jest responsywny, mobile-first i przygotowany dla różnych typów użytkowników. :contentReference[oaicite:8]{index=8}</p>
+                        </div>
+                        <div class="stack-item">
+                            <h4>Edge Gateway</h4>
+                            <p>Raspberry Pi działa jako most między chmurą a fizycznym sprzętem, w tym drukarką fiskalną i lokalnym statusem urządzenia. :contentReference[oaicite:9]{index=9}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="ai" class="section">
+            <div class="container">
+                <div class="section-head">
+                    <div class="eyebrow">AI i doświadczenie gościa</div>
+                    <h2>Inteligentne raporty i historie generowane po opłaceniu zamówienia</h2>
+                    <p>
+                        Warstwa AI w Inteligentny system POS może działać w dwóch kierunkach: wspierać właściciela raportami biznesowymi
+                        oraz budować bardziej pamiętne doświadczenie po stronie klienta. W architekturze systemu przewidziana
+                        jest integracja z Gemini API, co dobrze wspiera taki model rozwoju. :contentReference[oaicite:10]{index=10}
+                    </p>
+                </div>
+
+                <div class="grid-3">
+                    <article class="card">
+                        <div class="tag">PO PŁATNOŚCI</div>
+                        <h3>Historie o zamówieniu</h3>
+                        <p>
+                            Po opłaceniu zamówienia system może wygenerować krótką, lekką i zabawną historię
+                            związaną dokładnie z pozycjami, które klient właśnie kupił. To nie jest historia konta klienta,
+                            tylko treść tworzona na podstawie świeżo opłaconego koszyka.
+                        </p>
+                        <ul>
+                            <li>Treść powstaje na bazie kupionych produktów</li>
+                            <li>Format krótki: 2–3 zdania</li>
+                            <li>Ton: ciepły, lekki, kulinarny i zapamiętywalny</li>
+                        </ul>
+                    </article>
+
+                    <article class="card">
+                        <div class="tag">BRANDING</div>
+                        <h3>Duch Burgera i podobne persony</h3>
+                        <p>
+                            Mechanizm może działać w oparciu o konkretną osobowość marki, np. „Ducha Burgera” –
+                            wesołego, mądrego ducha kuchni, który komentuje zamówienie i dodaje do niego małą anegdotę lub żart.
+                        </p>
+                        <ul>
+                            <li>Spójny styl komunikacji marki</li>
+                            <li>Większa sympatia do produktu</li>
+                            <li>Efekt „wow” po zakupie</li>
+                        </ul>
+                    </article>
+
+                    <article class="card">
+                        <div class="tag">AI REPORTS</div>
+                        <h3>Inteligentne raporty dla managera</h3>
+                        <p>
+                            Ta sama warstwa AI może generować także raporty eksperckie dla właściciela lub managera:
+                            opisywać anomalie, tłumaczyć dane i wskazywać priorytety działania bez konieczności czytania surowych tabel.
+                        </p>
+                        <ul>
+                            <li>Język zrozumiały dla biznesu</li>
+                            <li>Wnioski zamiast samych liczb</li>
+                            <li>Szybsze reagowanie na problemy</li>
+                        </ul>
+                    </article>
+                </div>
+
+                <div class="story-demo" style="margin-top:22px;">
+                    <div class="tag">PRZYKŁAD FUNKCJI PO ZAKUPIE</div>
+                    <h3 style="margin-top:0;">Krótka historia generowana dla opłaconego zamówienia</h3>
+                    <p style="color: var(--muted); margin-bottom: 0;">
+                        Przykład działania pod zamówienie typu: burger + frytki + cola.
+                    </p>
+                    <div class="story-bubble">
+                        „Duch Burgera szepnął dziś do kuchni, że to zestaw dla kogoś, kto nie uznaje półśrodków:
+                        burger bierze scenę, frytki robią za wierną obstawę, a cola pilnuje, żeby finał miał odpowiedni błysk.
+                        Smacznego — ten skład wygląda jak mała kulinarna drużyna do zadań specjalnych.”
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        
+
+        <section class="section">
+            <div class="container">
+                <div class="cta">
+                    <div>
+                        <h2>Chcesz wdrożyć Inteligentny system POS w restauracji lub sieci lokali?</h2>
+                        <p>
+                            Skontaktuj się, jeśli chcesz pokazać lokal, proces sprzedaży albo obecne problemy operacyjne.
+                            System można rozwijać etapami – od POS i KDS po raportowanie, funkcje AI i doświadczenia po zakupie.
+                        </p>
+                    </div>
+                    <a class="btn btn-primary" href="mailto:hajdukiewicz@gmail.com?subject=Demo%20Inteligentny system%20POS">Napisz teraz</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="prawo" class="section">
+            <div class="container">
+                <div class="section-head">
+                    <div class="eyebrow">Informacje prawne</div>
+                    <h2>Minimalny, profesjonalny zakres informacji dla tej strony</h2>
+                    <p>
+                        Poniższa sekcja jest przygotowana dla obecnej wersji strony informacyjnej.
+                        Zakłada brak formularzy, brak kont użytkowników na stronie marketingowej i brak narzędzi
+                        analitycznych lub reklamowych w witrynie publicznej.
+                    </p>
+                </div>
+
+                <div class="legal-box">
+                    <h3>Informacja o właścicielu strony</h3>
+                    <p>
+                        Właścicielem strony jest <strong>Marcin Hajdukiewicz</strong>.
+                        Kontakt w sprawach związanych ze stroną: <a href="mailto:hajdukiewicz@gmail.com">hajdukiewicz@gmail.com</a>.
+                    </p>
+
+                    <h4>Dane i logi techniczne</h4>
+                    <p>
+                        Sama strona ma charakter informacyjny. Nie udostępnia formularzy rejestracyjnych ani kont użytkowników.
+                        Jednocześnie infrastruktura hostingowa może technicznie przetwarzać dane eksploatacyjne takie jak adres IP,
+                        data zapytania, identyfikator przeglądarki, informacje o błędach lub parametry urządzenia – wyłącznie
+                        w celu zapewnienia bezpieczeństwa, stabilności i prawidłowego działania serwisu.
+                    </p>
+
+                    <h4>Pliki cookies</h4>
+                    <p>
+                        Strona wykorzystuje wyłącznie niezbędne pliki cookies lub podobne technologie konieczne do prawidłowego
+                        działania serwisu i zapamiętania zamknięcia komunikatu informacyjnego. Nie są używane cookies marketingowe,
+                        profilujące ani analityczne.
+                    </p>
+
+                    <h4>Zakres publikowanych danych</h4>
+                    <ul>
+                        <li>Na stronie podany jest właściciel oraz adres kontaktowy.</li>
+                        <li>Adresu zamieszkania nie publikujesz, jeżeli działasz jako osoba prywatna i obecna strona ma charakter informacyjny.</li>
+                        <li>Jeżeli później dodasz sprzedaż online, regulamin, płatności, formularze lub konta użytkowników, zakres informacji prawnych trzeba rozszerzyć.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container footer-inner">
+            <div>
+                <strong style="color:#fff;">zjedz.it</strong><br />
+                Inteligentny system POS dla gastronomii
+            </div>
+            <div class="footer-links">
+                <a href="mailto:hajdukiewicz@gmail.com">Kontakt</a>
+                <a href="#prawo">Informacje prawne</a>
+            </div>
+        </div>
+    </footer>
+
+    <div id="cookie-banner" role="dialog" aria-live="polite" aria-label="Informacja o plikach cookies">
+        <div class="cookie-inner">
+            <div class="cookie-text">
+                Ta strona używa wyłącznie niezbędnych plików cookies oraz lokalnego mechanizmu zapamiętania zamknięcia tego komunikatu.
+            </div>
+            <div class="cookie-actions">
+                <button id="cookie-accept" class="btn btn-primary" type="button">Rozumiem</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const banner = document.getElementById("cookie-banner");
+            const acceptBtn = document.getElementById("cookie-accept");
+            const storageKey = "zjedzit_cookie_notice_closed";
+
+            function showBanner() {
+                banner.style.display = "block";
+            }
+
+            function hideBanner() {
+                banner.style.display = "none";
+            }
+
+            try {
+                if (!localStorage.getItem(storageKey)) {
+                    showBanner();
+                }
+
+                acceptBtn.addEventListener("click", function () {
+                    localStorage.setItem(storageKey, "1");
+                    hideBanner();
+                });
+            } catch (error) {
+                showBanner();
+                acceptBtn.addEventListener("click", function () {
+                    hideBanner();
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

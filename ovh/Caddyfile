@@ -1,0 +1,26 @@
+{
+    # Optional: Email for Let's Encrypt notifications
+    # email your-email@example.com
+}
+
+zjedz.it, www.zjedz.it {
+    root * /var/www/html
+    file_server
+}
+
+elvis.zjedz.it {
+    reverse_proxy elvis_app:8080
+}
+
+bar.zjedz.it {
+    reverse_proxy bar_app:8080
+}
+
+dash.zjedz.it {
+    reverse_proxy dash_app:8080
+}
+
+# Fallback for IP access or undefined subdomains
+:80 {
+    reverse_proxy elvis_app:8080
+}

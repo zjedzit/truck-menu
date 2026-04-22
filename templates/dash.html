@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Zjedz.it Orchestrator Dash</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; background: #0a0a0a; color: #f0f0f0; padding: 30px; margin: 0; line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: #141414; border: 1px solid #222; padding: 24px; border-radius: 12px; margin-bottom: 24px; }
+        .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #dc3545; margin-right: 8px; box-shadow: 0 0 10px rgba(220,53,69,0.5); }
+        .status-dot.active { background: #28a745; box-shadow: 0 0 10px rgba(40,167,69,0.5); }
+        h1 { margin-top: 0; color: #4a90e2; font-size: 2.2em; font-weight: 800; letter-spacing: -0.02em; }
+        h2 { margin-top: 0; font-size: 1.3em; margin-bottom: 20px; color: #4a90e2; }
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { background: #1c1c1c; margin-bottom: 12px; padding: 18px; border-radius: 8px; border: 1px solid #2a2a2a; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+        .stat-group { display: flex; gap: 20px; font-size: 0.9em; color: #aaa; }
+        .stat-item { display: flex; align-items: center; }
+        .stat-item strong { color: #fff; margin-left: 6px; }
+        .btn { background: #4a90e2; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:hover { background: #357abd; }
+        input[type="text"], input[type="password"] { background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 10px 14px; border-radius: 6px; font-size: 1em; width: calc(100% - 30px); margin-bottom: 14px; }
+        .form-group { max-width: 400px; }
+        label { display: block; margin-bottom: 6px; font-size: 0.9em; color: #bbb; }
+        #error-msg { color: #ff6b6b; margin-top: 10px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Zjedz.it Orchestrator</h1>
+        
+        <div class="card">
+            <h2>Aktywne Środowiska (Subdomeny)</h2>
+            <ul id="pings-list">
+                <li>Ładowanie infrastruktury Docker...</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>Postaw Nową Knajpę (Tenant)</h2>
+            <div class="form-group">
+                <label>Nazwa subdomeny (np. pizza dla pizza.zjedz.it):</label>
+                <input type="text" id="tenant_name" placeholder="np. kawiarnia" autocomplete="off">
+                <label>PIN Autoryzacji Architekta:</label>
+                <input type="password" id="master_pin" placeholder="****">
+                <label>Token AI (Opcjonalny - osobny rachunek):</label>
+                <input type="password" id="tenant_ai_token" placeholder="zostaw puste by używać głównego">
+                <button class="btn" onclick="createTenant()">POSTAW SERWER</button>
+                <div id="error-msg"></div>
+            </div>
+        </div>
+    </div>
+
+        <div class="card" id="ai-zone" style="border-left: 4px solid #4a90e2;">
+            <h2>🤖 Diagnostyka AI (Duch Burgera)</h2>
+            <p>Status połączenia z modelem Gemini. Konfiguracja będzie używana we wszystkich nowowypuszczonych kontenerach.</p>
+            <div id="ai-status-info" style="margin-bottom: 20px; padding: 15px; background: #000; border-radius: 8px; border: 1px solid #333;">
+                Ładowanie statusu...
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <div>
+                    <label style="font-size: 0.75em; color: #888; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px; display:block;">Model Gemini</label>
+                    <input type="text" id="ai-model-name" placeholder="np. gemini-2.5-flash" style="background:#111; color:#fff; border:1px solid #333; padding:12px; border-radius:8px; width:100%; box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="font-size: 0.75em; color: #888; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px; display:block;">Klucz API Gemini (zostaw puste by nie zmieniać)</label>
+                    <input type="password" id="ai-api-key" placeholder="Wklej nowy klucz..." style="background:#111; color:#fff; border:1px solid #333; padding:12px; border-radius:8px; width:100%; box-sizing:border-box;">
+                </div>
+            </div>
+            <label style="font-size: 0.75em; color: #888; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px; display:block;">PIN Architekta (Wymagany do zmian AI)</label>
+            <input type="password" id="ai-master-pin" placeholder="****" style="background:#111; color:#fff; border:1px solid #333; padding:12px; border-radius:8px; width:100%; box-sizing:border-box; margin-bottom:10px;">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="btn" style="background: #333; color: white;" onclick="testAI()">TESTUJ POŁĄCZENIE</button>
+                <button class="btn" onclick="saveAIConfig()">ZAPISZ KONFIGURACJĘ API</button>
+            </div>
+            <div id="ai-test-result" style="margin-top: 15px; font-size: 0.85em; display: none; padding: 10px; border-radius: 5px;"></div>
+        </div>
+    </div>
+
+    <script>
+        async function loadAIStatus() {
+            try {
+                const pin = document.getElementById('ai-master-pin').value || document.getElementById('master_pin').value;
+                if (!pin) {
+                    document.getElementById('ai-status-info').innerHTML = "<i>Wpisz PIN Architekta, aby podejrzeć status API.</i>";
+                    return;
+                }
+                const res = await fetch(`/api/dash/ai_config?master_pin=${encodeURIComponent(pin)}`);
+                const data = await res.json();
+                if (data.error) {
+                    document.getElementById('ai-status-info').innerHTML = `<span style="color:red">Błąd autoryzacji: ${data.error}</span>`;
+                    return;
+                }
+                const info = document.getElementById('ai-status-info');
+                document.getElementById('ai-model-name').value = data.AI_MODEL_NAME || "gemini-2.5-flash";
+
+                info.innerHTML = `
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Model: <b>${data.AI_MODEL_NAME}</b></span>
+                        <span style="color: ${data.STATUS === 'OK' ? '#4caf50' : '#ff5252'}">● ${data.STATUS}</span>
+                    </div>
+                    <div style="margin-top:5px; font-size:0.8em; color:#fff;">
+                        API Key: <span style="font-family:monospace; color:#888;">${data.MASKED_KEY || "BRAK"}</span>
+                    </div>
+                `;
+            } catch (e) {
+                console.error("AI Status Error", e);
+            }
+        }
+
+        async function saveAIConfig() {
+            const model = document.getElementById('ai-model-name').value;
+            const key = document.getElementById('ai-api-key').value;
+            const pin = document.getElementById('ai-master-pin').value || document.getElementById('master_pin').value;
+            if(!pin) return alert("Podaj PIN Architekta!");
+
+            const res = await fetch('/api/dash/ai_config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    master_pin: pin,
+                    AI_MODEL_NAME: model,
+                    GEMINI_API_KEY: key || undefined
+                })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                alert("Konfiguracja AI zapisana globalnie.");
+                loadAIStatus();
+                document.getElementById('ai-api-key').value = '';
+            } else {
+                alert("Błąd: " + data.error);
+            }
+        }
+
+        async function testAI() {
+            const resultBox = document.getElementById('ai-test-result');
+            const pin = document.getElementById('ai-master-pin').value || document.getElementById('master_pin').value;
+            const model = document.getElementById('ai-model-name').value;
+            const token = document.getElementById('ai-api-key').value;
+            
+            if(!pin) return alert("Podaj PIN Architekta by testować!");
+
+            resultBox.style.display = 'block';
+            resultBox.style.background = '#222';
+            resultBox.style.color = '#aaa';
+            resultBox.innerText = "Trwa testowanie z OVH AI / Google... ⏳";
+
+            try {
+                const res = await fetch(`/api/dash/ai_test`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        master_pin: pin,
+                        model: model || undefined,
+                        token: token || undefined
+                    })
+                });
+                const data = await res.json();
+                if (data.error) {
+                    resultBox.style.background = 'rgba(255, 82, 82, 0.1)';
+                    resultBox.style.color = '#ff5252';
+                    resultBox.innerText = "❌ BŁĄD: " + data.error;
+                } else {
+                    resultBox.style.background = 'rgba(76, 175, 80, 0.1)';
+                    resultBox.style.color = '#4caf50';
+                    resultBox.innerText = `✅ SUKCES! Odpowiedź Modelu: "${data.response}"`;
+                }
+            } catch (e) {
+                resultBox.innerText = "❌ Błąd połączenia z serwerem Orchestratora.";
+            }
+        }
+
+        document.getElementById('ai-master-pin').addEventListener('blur', loadAIStatus);
+
+        window.pingHistory = {}; // Store ping latency history
+
+        function loadStatus() {
+            fetch('/api/dash/status')
+                .then(res => res.json())
+                .then(data => {
+                    const pingsList = document.getElementById('pings-list');
+                    if (data.error) {
+                        pingsList.innerHTML = `<li><span style="color:red">Błąd połączenia: ${data.error}</span></li>`;
+                        return;
+                    }
+                    
+                    pingsList.innerHTML = '';
+                    if(data.pings.length === 0) {
+                         pingsList.innerHTML = `<li>Brak aktywnych kontenerów APP. Upewnij się, że /var/run/docker.sock działa.</li>`;
+                    }
+                    data.pings.forEach(p => {
+                        const appDot = p.alive ? 'active' : '';
+                        const dbDot = p.db_alive ? 'active' : '';
+                        const appDbDot = p.app_health_db ? 'active' : '';
+                        const customTpl = p.custom_template ? '<span style="color:#28a745">✔ Aktywny </span>' : '<span style="color:#aaa">Domyślny (elvis)</span>';
+                        
+                        // Handle ping history chart
+                        if (!window.pingHistory[p.domain]) window.pingHistory[p.domain] = [];
+                        window.pingHistory[p.domain].push(p.latency_ms);
+                        if (window.pingHistory[p.domain].length > 20) window.pingHistory[p.domain].shift();
+                        
+                        let chartHTML = '<div style="display:flex; gap:2px; align-items:flex-end; height:20px; background:#111; padding:2px; border-radius:3px;">';
+                        window.pingHistory[p.domain].forEach(lat => {
+                            let h = 2; let color = '#ff5252';
+                            if (lat > 0) {
+                                h = Math.max(2, Math.min(20, 20 - (lat / 50))); // higher latency = lower bar
+                                color = lat < 200 ? '#4caf50' : (lat < 500 ? '#ffeb3b' : '#ff9800');
+                            }
+                            chartHTML += `<div style="width:4px; height:${h}px; background:${color};" title="${lat}ms"></div>`;
+                        });
+                        chartHTML += '</div>';
+
+                        const pingText = p.latency_ms > 0 ? `${p.latency_ms}ms` : "Brak odpowiedzi";
+
+                        pingsList.innerHTML += `
+                        <li>
+                            <div style="font-size: 1.1em; font-weight: bold; width: 100%;">
+                                ${p.domain}
+                                <div style="font-size: 0.7em; font-weight: normal; color:#888; float:right;">
+                                    FTP Folder Szablonu: <code>/opt/elvis/ovh/templates_${p.domain.split('.')[0]}</code>
+                                </div>
+                            </div>
+                            <div class="stat-group" style="margin-top:8px; width: 100%; align-items:center;">
+                                <div class="stat-item" title="Status kontenera"><span class="status-dot ${appDot}"></span> App: <strong>${p.app_status.toUpperCase()}</strong></div>
+                                <div class="stat-item" title="Status kontenera DB"><span class="status-dot ${dbDot}"></span> Baza: <strong>${p.db_size}</strong></div>
+                                <div class="stat-item" title="Status API DB (/health)"><span class="status-dot ${appDbDot}"></span> API DB</div>
+                                <div class="stat-item" style="margin-left:auto;">Motyw: <strong>${customTpl}</strong></div>
+                            </div>
+                            <div class="stat-group" style="margin-top:8px; width: 100%; align-items:center;">
+                                <div class="stat-item">Ping (/health): <strong style="margin-right:10px;">${pingText}</strong> ${chartHTML}</div>
+                            </div>
+                        </li>`;
+                    });
+                });
+        }
+
+        function createTenant() {
+            const name = document.getElementById('tenant_name').value.trim();
+            const pin = document.getElementById('master_pin').value.trim();
+            const err = document.getElementById('error-msg');
+            
+            if (!name || !pin) {
+                err.innerText = "Podaj nazwę i PIN.";
+                return;
+            }
+            if (!/^[a-z0-9]+$/.test(name)) {
+                err.innerText = "Nazwa może zawierać tylko małe litery i cyfry bez spacji.";
+                return;
+            }
+            
+            err.style.color = '#d4af37';
+            err.innerText = "Budowanie infrastruktury i bazy danych. Proszę czekać ok. 15-20 sekund...";
+            const tenantToken = document.getElementById('tenant_ai_token') ? document.getElementById('tenant_ai_token').value : undefined;
+            
+            fetch('/api/dash/create_tenant', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ tenant: name, pin: pin, tenant_token: tenantToken })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    err.style.color = '#ff6b6b';
+                    err.innerText = data.error;
+                } else {
+                    err.style.color = '#28a745';
+                    err.innerText = "Sukces! Nowa restauracja została stworzona i dopisana do Caddy.";
+                    document.getElementById('tenant_name').value = '';
+                    setTimeout(loadStatus, 2000);
+                }
+            })
+            .catch(e => {
+                err.style.color = '#ff6b6b';
+                err.innerText = "Błąd sieci: " + e;
+            });
+        }
+
+        loadStatus();
+        loadAIStatus();
+        setInterval(loadStatus, 15000);
+    </script>
+</body>
+</html>

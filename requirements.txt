@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+jinja2
+requests
+pymongo
+python-multipart
+websockets
+PyJWT
+openai
+gunicorn
+sqlalchemy
+psycopg2-binary
+python-dotenv
+passlib
+docker
+pyyaml

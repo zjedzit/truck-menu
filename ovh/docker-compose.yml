@@ -1,0 +1,121 @@
+services:
+  # --- ELVIS ---
+  elvis_db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: marcin_admin
+      POSTGRES_PASSWORD: Haslo123!
+      POSTGRES_DB: saas_db
+    volumes:
+      - elvis_db_data:/var/lib/postgresql/data
+    networks:
+      - elvis_net
+
+  elvis_app:
+    build:
+      context: ../elvis
+      dockerfile: Dockerfile
+    container_name: elvis_app
+    restart: always
+    depends_on:
+      - elvis_db
+    environment:
+      - DATABASE_URL=postgresql://marcin_admin:Haslo123!@postgres_db:5432/saas_db
+      - SYSTEM_MODE=restaurant
+      - BRAND=ELVIS
+    volumes:
+      - ../elvis:/app:cached
+    networks:
+      - elvis_net
+
+  # --- BAR ---
+  bar_db:
+    image: postgres:15-alpine
+    container_name: bar_db
+    restart: always
+    environment:
+      POSTGRES_USER: marcin_admin
+      POSTGRES_PASSWORD: Haslo123!
+      POSTGRES_DB: bar_db
+    volumes:
+      - bar_db_data:/var/lib/postgresql/data
+    networks:
+      - elvis_net
+
+  bar_app:
+    build:
+      context: ../elvis
+      dockerfile: Dockerfile
+    container_name: bar_app
+    restart: always
+    depends_on:
+      - bar_db
+    environment:
+      - DATABASE_URL=postgresql://marcin_admin:Haslo123!@bar_db:5432/bar_db
+      - SYSTEM_MODE=restaurant
+      - BRAND=BAR
+    volumes:
+      - ../elvis:/app:cached
+    networks:
+      - elvis_net
+
+  # --- DASH ---
+  dash_db:
+    image: postgres:15-alpine
+    container_name: dash_db
+    restart: always
+    environment:
+      POSTGRES_USER: marcin_admin
+      POSTGRES_PASSWORD: Haslo123!
+      POSTGRES_DB: dash_db
+    volumes:
+      - dash_db_data:/var/lib/postgresql/data
+    networks:
+      - elvis_net
+
+  dash_app:
+    build:
+      context: ../elvis
+      dockerfile: Dockerfile
+    container_name: dash_app
+    restart: always
+    depends_on:
+      - dash_db
+    environment:
+      - DATABASE_URL=postgresql://marcin_admin:Haslo123!@dash_db:5432/dash_db
+      - SYSTEM_MODE=restaurant
+      - BRAND=DASH
+    volumes:
+      - ../elvis:/app:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - elvis_net
+
+  # --- CADDY (Automatic SSL) ---
+  caddy:
+    image: caddy:latest
+    container_name: elvis_caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./index.html:/var/www/html/index.html
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - elvis_net
+
+networks:
+  elvis_net:
+    driver: bridge
+
+volumes:
+  elvis_db_data:
+  bar_db_data:
+  dash_db_data:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,18 @@
+serviceAccountKey.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment
+.env
+.env.local
+
+# Temp files
+tmp_*
+*.backup
+
+# IDE / AI
+.claude/
+.agents/

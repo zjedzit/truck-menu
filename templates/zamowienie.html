@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ brand }} ORDER | Dashboard Food Truck</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+        
+        :root {
+            --gold: #d4af37;
+            --bg: #050505;
+            --card-bg: #111;
+            --border: #222;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: #fff;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .glass-header {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            padding: 20px;
+            height: calc(100vh - 160px);
+            overflow-y: auto;
+        }
+
+        .slot {
+            aspect-ratio: 1 / 1.1;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .slot:hover {
+            border-color: var(--gold);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.1);
+        }
+
+        .slot.active {
+            background: linear-gradient(145deg, #151500, #0a0a00);
+            border-color: var(--gold);
+            box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+
+        .slot-number {
+            font-size: 2.8rem;
+            font-weight: 900;
+            line-height: 1;
+            color: rgba(255, 255, 255, 0.2);
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            letter-spacing: -2px;
+        }
+
+        .active .slot-number {
+            color: var(--gold);
+            text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .slot-status {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-top: auto;
+        }
+
+        .status-busy { color: var(--gold); }
+        .status-free { color: #555; }
+
+        .slot-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            color: #eee;
+            z-index: 1;
+        }
+
+        .timer {
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #888;
+            background: rgba(255,255,255,0.05);
+            padding: 2px 8px;
+            border-radius: 4px;
+            align-self: flex-start;
+            margin-top: 4px;
+        }
+
+        .btn-finish {
+            margin-top: 12px;
+            background: #fff;
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: 900;
+            padding: 6px;
+            border-radius: 8px;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.2s ease;
+        }
+
+        .slot.active:hover .btn-finish {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .btn-finish:hover {
+            background: var(--gold);
+            transform: scale(1.05);
+        }
+
+        .stats-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px 20px;
+            border-radius: 12px;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    
+    <header class="glass-header p-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-black italic tracking-tighter">{{ brand }} <span style="color:var(--gold)">ORDER</span></h1>
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">
+                Food Truck Intelligence Center
+            </p>
+        </div>
+
+        <div class="flex items-center gap-8">
+            <div class="stats-card text-center">
+                <div class="text-[9px] text-gray-500 font-black uppercase tracking-widest mb-1">Aktywne Sesje</div>
+                <div id="stats-active" class="text-2xl font-black tabular-nums">0 / 30</div>
+            </div>
+            
+            <button onclick="createNewSession()" class="bg-white text-black px-8 py-3 rounded-2xl font-black text-sm hover:bg-[#d4af37] transition-colors shadow-lg shadow-white/5">
+                + NOWA SESJA
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <div id="slots-grid" class="grid-container">
+            <!-- Interaktywne sloty 1-30 -->
+        </div>
+    </main>
+
+    <footer class="p-4 border-t border-white/5 bg-black flex justify-between items-center text-[9px] text-gray-700 font-bold uppercase tracking-[3px]">
+        <span>&copy; 2026 Zjedz.it | System Kolejkowy</span>
+        <span id="system-time">--:--:--</span>
+    </footer>
+
+    <script>
+        const MAX_SLOTS = 30;
+        let lastQueue = [];
+
+        async function loadQueue() {
+            try {
+                const res = await fetch('/qrtrack/queue');
+                const data = await res.json();
+                renderSlots(data.queue || []);
+                document.getElementById('stats-active').innerText = `${data.total_active} / ${MAX_SLOTS}`;
+            } catch (e) {
+                console.error("Dashboard error:", e);
+            }
+        }
+
+        function renderSlots(activeSessions) {
+            const grid = document.getElementById('slots-grid');
+            grid.innerHTML = '';
+
+            for (let i = 1; i <= MAX_SLOTS; i++) {
+                const session = activeSessions.find(s => s.session_number === i);
+                const slot = document.createElement('div');
+                slot.className = `slot ${session ? 'active' : ''}`;
+                
+                if (session) {
+                    const elapsed = Math.floor((new Date() - new Date(session.timestamp)) / 60000);
+                    slot.innerHTML = `
+                        <div class="slot-number">${i}</div>
+                        <div class="slot-status status-busy">● Zajęty</div>
+                        <div class="slot-name">${session.customer_name || 'Klient #' + i}</div>
+                        <div class="timer">${elapsed}m</div>
+                        <div class="btn-finish" onclick="event.stopPropagation(); finishSession('${session.session_id}')">ZAKOŃCZ</div>
+                    `;
+                    slot.onclick = () => window.location.href = `/qrtrack/session/${session.session_id}`;
+                } else {
+                    slot.innerHTML = `
+                        <div class="slot-number">${i}</div>
+                        <div class="slot-status status-free">Wolny</div>
+                        <div class="slot-name" style="color:#333;">Dostępny</div>
+                        <div class="flex-1"></div>
+                        <div class="text-center opacity-10"><svg class="w-8 h-8 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"/></svg></div>
+                    `;
+                    slot.onclick = () => createNewSession(i);
+                }
+                grid.appendChild(slot);
+            }
+        }
+
+        async function createNewSession(number = null) {
+            try {
+                const res = await fetch('/qrtrack/new', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'foodtruck',
+                        customer_name: number ? `Miejsce ${number}` : null
+                    })
+                });
+                if (res.ok) loadQueue();
+            } catch (e) { console.error("Create error:", e); }
+        }
+
+        async function finishSession(sid) {
+            try {
+                const res = await fetch(`/qrtrack/session/${sid}/complete`, { method: 'POST' });
+                if (res.ok) loadQueue();
+            } catch (e) { console.error("Finish error:", e); }
+        }
+
+        function updateTime() {
+            document.getElementById('system-time').innerText = new Date().toLocaleTimeString();
+        }
+
+        setInterval(loadQueue, 5000);
+        setInterval(updateTime, 1000);
+        loadQueue();
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/ws/`);
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'update') loadQueue();
+        };
+    </script>
+</body>
+</html>
