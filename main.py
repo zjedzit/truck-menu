@@ -2987,13 +2987,15 @@ async def get_dash_status():
             name = c.name
             if name.endswith("_app") or name == "zjedzit_app":
                 prefix = "elvis" if name == "zjedzit_app" else name.split("_")[0]
+                is_running = c.status == "running"
+                
                 status["pings"].append({
                     "domain": f"{prefix}.zjedz.it",
-                    "alive": c.status == "running",
-                    "db_alive": True,
-                    "app_health_db": True,
-                    "latency_ms": 1,
-                    "db_size": "---",
+                    "alive": is_running,
+                    "db_alive": is_running, # Assume DB is up if app is running for now
+                    "app_health_db": is_running,
+                    "latency_ms": 1 if is_running else 0,
+                    "db_size": "OK" if is_running else "ERR",
                     "app_status": c.status,
                     "custom_template": False,
                     "template_path": f"/opt/elvis/{prefix}"
