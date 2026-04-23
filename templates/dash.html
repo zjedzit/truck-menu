@@ -407,6 +407,13 @@
                 `;
             } catch (e) { }
         }
+        window.onerror = function(msg, url, line) {
+            const debugConsole = document.getElementById('debug-console');
+            if (debugConsole) {
+                debugConsole.innerHTML += `<div style="color:#f00">[JS ERROR] ${msg} (line ${line})</div>`;
+            }
+            return false;
+        };
 
         async function createTenant() {
             const name = document.getElementById('tenant_name').value.trim();
@@ -487,11 +494,12 @@
                 debugConsole.scrollTop = debugConsole.scrollHeight;
             }
 
-            logDebug("Rozpoczynam pobieranie statusu...");
+            logDebug("Inicjalizacja pobierania statusu...");
             
             fetch('/api/dash/status')
                 .then(res => {
                     logDebug(`Odpowiedź HTTP: ${res.status} ${res.statusText}`, res.ok ? '#0f0' : '#f00');
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
                     return res.json();
                 })
                 .then(data => {
@@ -502,8 +510,8 @@
                     const dbCountWidget = document.getElementById('status-db-count');
 
                     if (dockerWidget) {
-                        dockerWidget.querySelector('.stat-value').innerText = data.error && data.error.includes("Docker") ? "BŁĄD" : "OK";
-                        dockerWidget.querySelector('.stat-value').style.color = data.error && data.error.includes("Docker") ? "var(--danger)" : "var(--success)";
+                        dockerWidget.querySelector('.stat-value').innerText = (data.error && data.error.includes("Docker")) ? "BŁĄD" : "OK";
+                        dockerWidget.querySelector('.stat-value').style.color = (data.error && data.error.includes("Docker")) ? "var(--danger)" : "var(--success)";
                     }
                     if (dbWidget) {
                         dbWidget.querySelector('.stat-value').innerText = data.db_alive ? "OK" : "BŁĄD";
@@ -516,34 +524,36 @@
                         dbCountWidget.querySelector('.stat-value').innerText = data.db_instances || 0;
                     }
 
-                    logDebug(`Otrzymano dane. Liczba tenantów: ${data.pings ? data.pings.length : 0}`);
+                    logDebug(`Otrzymano dane JSON. Liczba tenantów: ${data.pings ? data.pings.length : 0}`);
                     if (data.error) {
                         logDebug(`BŁĄD SERWERA: ${data.error}`, '#f00');
                         list.innerHTML = `<li style="color:var(--danger)">Błąd: ${data.error}</li>`;
                         return;
                     }
 
-                    list.innerHTML = '';
-                    if (!data.pings || data.pings.length === 0) {
-                        list.innerHTML = `<li>Brak aktywnych tenantów. Dodaj pierwszą restaurację poniżej.</li>`;
-                        return;
-                    }
 
-                    data.pings.forEach(p => {
-                        if (!window.pingHistory[p.domain]) window.pingHistory[p.domain] = [];
-                        window.pingHistory[p.domain].push(p.latency_ms);
-                        if (window.pingHistory[p.domain].length > 30) window.pingHistory[p.domain].shift();
+                        list.innerHTML = '';
+                        if (!data.pings || data.pings.length === 0) {
+                            list.innerHTML = `<li>Brak aktywnych tenantów. Dodaj pierwszą restaurację poniżej.</li>`;
+                            logDebug("Lista tenantów pusta.");
+                            return;
+                        }
 
-                        let chartHTML = '<div class="latency-chart">';
-                        window.pingHistory[p.domain].forEach(lat => {
-                            let h = lat > 0 ? Math.max(4, Math.min(24, 24 - (lat / 20))) : 2;
-                            let color = lat < 100 ? 'var(--success)' : (lat < 300 ? '#f1c40f' : 'var(--danger)');
-                            if (lat <= 0) color = 'rgba(255,255,255,0.1)';
-                            chartHTML += `<div class="bar" style="height:${h}px; background:${color}" title="${lat}ms"></div>`;
-                        });
-                        chartHTML += '</div>';
+                        data.pings.forEach(p => {
+                            if (!window.pingHistory[p.domain]) window.pingHistory[p.domain] = [];
+                            window.pingHistory[p.domain].push(p.latency_ms);
+                            if (window.pingHistory[p.domain].length > 30) window.pingHistory[p.domain].shift();
 
-                        list.innerHTML += `
+                            let chartHTML = '<div class="latency-chart">';
+                            window.pingHistory[p.domain].forEach(lat => {
+                                let h = lat > 0 ? Math.max(4, Math.min(24, 24 - (lat / 20))) : 2;
+                                let color = lat < 100 ? 'var(--success)' : (lat < 300 ? '#f1c40f' : 'var(--danger)');
+                                if (lat <= 0) color = 'rgba(255,255,255,0.1)';
+                                chartHTML += `<div class="bar" style="height:${h}px; background:${color}" title="${lat}ms"></div>`;
+                            });
+                            chartHTML += '</div>';
+
+                            list.innerHTML += `
                             <li>
                                 <div class="tenant-header">
                                     <div class="tenant-info">
