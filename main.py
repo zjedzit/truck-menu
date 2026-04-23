@@ -3014,7 +3014,11 @@ async def get_dash_status():
                 if "elvis" not in tenants: tenants["elvis"] = {}
                 tenants["elvis"]["db"] = c
 
-        for prefix, services in tenants.items():
+        import asyncio
+        import requests
+        import time
+
+        async def check_tenant(prefix, services):
             app_c = services.get("app")
             db_c = services.get("db")
             
@@ -3025,33 +3029,35 @@ async def get_dash_status():
             if db_alive:
                 try:
                     db_pass = os.environ.get("DATABASE_PASSWORD", "Haslo123!")
-                    # Try to get size via exec_run - using PGPASSWORD to avoid interactive prompt
                     cmd = f"PGPASSWORD='{db_pass}' psql -U marcin saas_db -t -c \"SELECT pg_database_size('saas_db')\""
-                    res = db_c.exec_run(["bash", "-c", cmd])
+                    # Run in thread to not block async loop
+                    res = await asyncio.to_thread(db_c.exec_run, ["bash", "-c", cmd])
                     if res.exit_code == 0:
                         bytes_sz = int(res.output.decode('utf-8').strip())
                         db_size = f"{bytes_sz / (1024*1024):.1f} MB"
                 except: 
                     db_size = "Error"
 
-            # Template logic check
             host_tmpl = f"ovh/templates_{prefix}"
             has_custom_template = Path(host_tmpl).exists()
 
             latency = -1
             app_health_db = False
             if app_alive and app_c:
-                import time, requests
                 start_t = time.time()
                 try:
-                    r = requests.get(f"http://{app_c.name}:8080/health", timeout=1.0)
+                    # Run in thread to not block
+                    def do_ping():
+                        return requests.get(f"http://{app_c.name}:8080/health", timeout=0.8)
+                    
+                    r = await asyncio.to_thread(do_ping)
                     latency = round((time.time() - start_t) * 1000)
                     if r.status_code == 200:
                         app_health_db = r.json().get("db_alive", False)
                 except:
                     pass
 
-            status["pings"].append({
+            return {
                 "domain": f"{prefix}.zjedz.it",
                 "alive": app_alive,
                 "db_alive": db_alive,
@@ -3061,7 +3067,12 @@ async def get_dash_status():
                 "app_status": app_c.status if app_c else "missing",
                 "custom_template": has_custom_template,
                 "template_path": f"/opt/elvis/ovh/templates_{prefix}" if has_custom_template else "Domyślny"
-            })
+            }
+
+        # Run all checks in parallel
+        tasks = [check_tenant(p, s) for p, s in tenants.items()]
+        status["pings"] = await asyncio.gather(*tasks)
+
     except Exception as e:
         status["error"] = f"Docker problem: {str(e)}"
 
