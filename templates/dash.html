@@ -186,8 +186,8 @@
         }
 
         .btn-danger {
-            background: transparent;
-            border: 1px solid rgba(255, 77, 77, 0.3);
+            background: rgba(255, 77, 77, 0.1);
+            border: 1px solid var(--danger);
             color: var(--danger);
             padding: 8px 16px;
             font-size: 0.8em;
@@ -476,7 +476,7 @@
                                 <div class="tenant-header">
                                     <div class="tenant-info">
                                         <h3>${p.domain}</h3>
-                                        <div class="tenant-path">App Container: ${p.app_status}</div>
+                                        <div class="tenant-path">KONTENER: ${p.app_status.toUpperCase()}</div>
                                     </div>
                                     <div style="display: flex; gap: 10px; align-items: center;">
                                         <div class="status-badge">

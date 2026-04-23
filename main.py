@@ -3021,14 +3021,18 @@ async def get_dash_status():
             app_alive = app_c and app_c.status == "running"
             db_alive = db_c and db_c.status == "running"
             
-            db_size = "?"
+            db_size = "---"
             if db_alive:
-                res = db_c.exec_run("psql -U marcin saas_db -t -c \"SELECT pg_database_size('saas_db')\"")
-                if res.exit_code == 0:
-                    try:
+                try:
+                    db_pass = os.environ.get("DATABASE_PASSWORD", "Haslo123!")
+                    # Try to get size via exec_run - using PGPASSWORD to avoid interactive prompt
+                    cmd = f"PGPASSWORD='{db_pass}' psql -U marcin saas_db -t -c \"SELECT pg_database_size('saas_db')\""
+                    res = db_c.exec_run(["bash", "-c", cmd])
+                    if res.exit_code == 0:
                         bytes_sz = int(res.output.decode('utf-8').strip())
                         db_size = f"{bytes_sz / (1024*1024):.1f} MB"
-                    except: pass
+                except: 
+                    db_size = "Error"
 
             # Template logic check
             host_tmpl = f"ovh/templates_{prefix}"
