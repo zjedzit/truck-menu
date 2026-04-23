@@ -2994,10 +2994,10 @@ async def get_dash_status():
         import json
         import os
         from pathlib import Path
+        import time, requests
         
         client = docker.from_env()
         containers = client.containers.list(all=True)
-        # Groups containers by prefix (e.g. elvis_app -> elvis, pizza_db -> pizza)
         tenants = {}
         for c in containers:
             name = c.name
@@ -3007,18 +3007,14 @@ async def get_dash_status():
                 tenants[prefix]["app"] = c
             elif name.endswith("_db") and name != "postgres_db":
                 prefix = name.split("_")[0]
-                if prefix == "postgres": prefix = "elvis" # legacy handler
+                if prefix == "postgres": prefix = "elvis"
                 if prefix not in tenants: tenants[prefix] = {}
                 tenants[prefix]["db"] = c
-            elif name == "postgres_db": # legacy handler mapping
+            elif name == "postgres_db":
                 if "elvis" not in tenants: tenants["elvis"] = {}
                 tenants["elvis"]["db"] = c
 
-        import asyncio
-        import requests
-        import time
-
-        async def check_tenant(prefix, services):
+        for prefix, services in tenants.items():
             app_c = services.get("app")
             db_c = services.get("db")
             
@@ -3030,8 +3026,7 @@ async def get_dash_status():
                 try:
                     db_pass = os.environ.get("DATABASE_PASSWORD", "Haslo123!")
                     cmd = f"PGPASSWORD='{db_pass}' psql -U marcin saas_db -t -c \"SELECT pg_database_size('saas_db')\""
-                    # Run in thread to not block async loop
-                    res = await asyncio.to_thread(db_c.exec_run, ["bash", "-c", cmd])
+                    res = db_c.exec_run(["bash", "-c", cmd])
                     if res.exit_code == 0:
                         bytes_sz = int(res.output.decode('utf-8').strip())
                         db_size = f"{bytes_sz / (1024*1024):.1f} MB"
@@ -3046,18 +3041,14 @@ async def get_dash_status():
             if app_alive and app_c:
                 start_t = time.time()
                 try:
-                    # Run in thread to not block
-                    def do_ping():
-                        return requests.get(f"http://{app_c.name}:8080/health", timeout=0.8)
-                    
-                    r = await asyncio.to_thread(do_ping)
+                    r = requests.get(f"http://{app_c.name}:8080/health", timeout=1.0)
                     latency = round((time.time() - start_t) * 1000)
                     if r.status_code == 200:
                         app_health_db = r.json().get("db_alive", False)
                 except:
                     pass
 
-            return {
+            status["pings"].append({
                 "domain": f"{prefix}.zjedz.it",
                 "alive": app_alive,
                 "db_alive": db_alive,
@@ -3067,12 +3058,7 @@ async def get_dash_status():
                 "app_status": app_c.status if app_c else "missing",
                 "custom_template": has_custom_template,
                 "template_path": f"/opt/elvis/ovh/templates_{prefix}" if has_custom_template else "Domyślny"
-            }
-
-        # Run all checks in parallel
-        tasks = [check_tenant(p, s) for p, s in tenants.items()]
-        status["pings"] = await asyncio.gather(*tasks)
-
+            })
     except Exception as e:
         status["error"] = f"Docker problem: {str(e)}"
 

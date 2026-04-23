@@ -2,7 +2,7 @@
   # On-demand TLS: Caddy pyta aplikację czy wolno wydać cert.
   # Caddy sam robi GET: /api/dash/allow?domain=<hostname>  [1](https://deepwiki.com/lucaslorentz/caddy-docker-proxy/3.1-docker-labels)[2](https://ovh.github.io/manager/)
   on_demand_tls {
-    ask http://zjedzit_app:8080/api/dash/allow
+    ask http://app:8080/api/dash/allow
   }
 
   # (opcjonalnie) email do ACME/Let's Encrypt
@@ -26,12 +26,12 @@ zjedz.it, www.zjedz.it {
   handle @dash {
     @root path /
     redir @root /dash 302
-    reverse_proxy zjedzit_app:8080
+    reverse_proxy app:8080
   }
 
   # Wszystkie inne hosty (tenants): idą do aplikacji (multi-tenant po Host)
   handle {
-    reverse_proxy zjedzit_app:8080
+    reverse_proxy app:8080
   }
 }
 
