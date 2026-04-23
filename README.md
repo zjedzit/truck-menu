@@ -1,30 +1,25 @@
-# Elvis POS System
+# Elvis POS — Gastronomiczny System Hybrydowy (Cloud-Edge)
 
-## Overview
-The Elvis POS system is a cloud-based, AI-powered Point-of-Sale solution designed for restaurants, food trucks, and cafes. It provides a comprehensive set of features, including:
+Elvis to nowoczesny system POS (Point of Sale) stworzony z myślą o food truckach i restauracjach, które potrzebują 100% niezawodności. Łączy moc serwera w chmurze (VPS) z lokalnym terminalem (T520) zdolnym do pracy offline.
 
-- QR-code based ordering for customers
-- Kitchen Display System (KDS) for the kitchen staff
-- Expo/Pickup station for order management
-- Admin panel for business owners
-- Real-time data synchronization via WebSocket
-- AI-powered storytelling and upselling
+## 📖 Dokumentacja
+Cała dokumentacja została przeniesiona i zoptymalizowana w folderze `/docs`.
 
-## Getting Started
+**Zacznij tutaj:** 👉 [**DOKUMENTACJA (00_INDEKS.md)**](docs/00_INDEKS.md)
 
-### Local Development
-To set up the development environment, follow these steps:
+### Szybkie linki:
+- [Jak zainstalować VPS (OVH)?](docs/02_WDROZENIE_VPS.md)
+- [Jak przygotować terminal T520?](docs/03_TERMINAL_T520.md)
+- [Plany rozwoju (Roadmap 2026)](docs/06_ROADMAP_2026.md)
 
-1. Clone the repository: `git clone https://github.com/zjedzit/truck-menu.git`
-2. Install the required dependencies: `cd truck-menu && pip install -r requirements.txt`
-3. Start the development server: `python main.py`
-4. Open the application in your browser: `http://localhost:8000`
+---
+## 🚀 Szybki start na VPS
+Jeśli jesteś na serwerze OVH i chcesz uruchomić system:
+```bash
+cd ovh
+./setup-ubuntu.sh
+docker compose up -d --build
+```
 
-### Deployment
-For deployment on a VPS or local edge node (Lenovo T520), please refer to the [DEPLOYMENT.md](DEPLOYMENT.md) file for detailed instructions.
-
-## Contributing
-We welcome contributions to the Elvis POS system. If you find any issues or have ideas for improvements, please feel free to submit a pull request or open an issue on the [GitHub repository](https://github.com/zjedzit/truck-menu).
-
-## License
-The Elvis POS system is licensed under the [MIT License](LICENSE).
+---
+*Created with ❤️ by the Zjedz.it Team*
