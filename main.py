@@ -1392,26 +1392,30 @@ def get_db():
 # --- STARTUP SEEDING ---
 @app.on_event("startup")
 async def seed_data():
-    """Seed initial staff with master NFC tags"""
+    """Seed initial staff and tenants for unified instance"""
     try:
         db = SessionLocal()
-        masters = [
-            ("Master 1", "0067305985"),
-            ("Master 2", "0575292482")
-        ]
+        
+        # 1. Seed Masters
+        masters = [("Master 1", "0067305985"), ("Master 2", "0575292482")]
         for name, nfc in masters:
             existing = db.query(Staff).filter(Staff.nfc_id == nfc).first()
             if not existing:
-                new_staff = Staff(
-                    id=str(uuid.uuid4())[:8],
-                    name=name,
-                    nfc_id=nfc,
-                    pin="123456", 
-                    role="admin", # admin has access to everything
-                    is_active=False
-                )
+                new_staff = Staff(id=str(uuid.uuid4())[:8], name=name, nfc_id=nfc, pin="123456", role="admin", is_active=False, tenant_id="system")
                 db.add(new_staff)
-                logger.info(f"Seeded master NFC: {name}")
+
+        # 2. Seed initial tenants for transition
+        tenants = ["stary", "nowy"]
+        for slug in tenants:
+            existing_tenant = db.query(Tenant).filter(Tenant.slug == slug).first()
+            if not existing_tenant:
+                new_t = Tenant(id=str(uuid.uuid4()), slug=slug, name=slug.capitalize(), status="active")
+                db.add(new_t)
+                # Also ensure Restaurant entry exists
+                new_r = Restaurant(id=slug, name=slug.capitalize(), mode="restaurant")
+                db.add(new_r)
+                logger.info(f"Seeded tenant for unified instance: {slug}")
+
         db.commit()
     except Exception as e:
         logger.error(f"Seeding error: {e}")
