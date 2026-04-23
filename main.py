@@ -3296,6 +3296,16 @@ async def delete_tenant(payload: TenantRequest):
         except Exception as ce:
             print(f"Caddy reload failed: {ce}")
             
+        # 5. Usunięcie wpisu z bazy danych (tenancy)
+        try:
+            db = SessionLocal()
+            db.query(Tenant).filter(Tenant.slug == tenant).delete()
+            db.commit()
+            db.close()
+            print(f"Removed {tenant} from tenants table")
+        except Exception as dbe:
+            print(f"Failed to remove from DB: {dbe}")
+
         return {"success": True}
     except Exception as e:
         logger.error(f"Error in delete_tenant: {e}")
