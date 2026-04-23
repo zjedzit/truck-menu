@@ -2994,6 +2994,18 @@ async def get_dash_status():
         status["error"] = f"Docker Error: {str(e)}"
     return status
 
+@app.get("/test_docker")
+async def test_docker():
+    """Directly test docker connectivity without JS"""
+    try:
+        import docker
+        client = docker.from_env()
+        containers = client.containers.list(all=True)
+        names = [c.name for c in containers]
+        return {"status": "ok", "count": len(names), "containers": names}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/api/dash/allow")
 async def allow_domain(domain: str):
     """Caddy calls this to check if it should issue an SSL certificate for a domain"""

@@ -334,6 +334,16 @@
                 </div>
 
                 <div style="display: grid; gap: 15px; margin-bottom: 15px;">
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 30px; background: #000; border: 1px solid #333; font-family: monospace;">
+            <h3 style="color: #0f0; font-size: 0.8em; margin-bottom: 10px;">> DIAGNOSTYKA SYSTEMOWA</h3>
+            <div id="debug-console" style="font-size: 0.85em; color: #aaa; max-height: 200px; overflow-y: auto;">
+                Oczekiwanie na start diagnostyki...
+            </div>
+        </div>
                     <div>
                         <label>Model Gemini</label>
                         <input type="text" id="ai-model-name" placeholder="gemini-2.5-flash">
@@ -452,11 +462,27 @@
         }
 
         function loadStatus() {
+            const list = document.getElementById('pings-list');
+            const debugConsole = document.getElementById('debug-console');
+            
+            function logDebug(msg, color='#aaa') {
+                if (!debugConsole) return;
+                const now = new Date().toLocaleTimeString();
+                debugConsole.innerHTML += `<div style="color:${color}">[${now}] ${msg}</div>`;
+                debugConsole.scrollTop = debugConsole.scrollHeight;
+            }
+
+            logDebug("Rozpoczynam pobieranie statusu...");
+            
             fetch('/api/dash/status')
-                .then(res => res.json())
+                .then(res => {
+                    logDebug(`Odpowiedź HTTP: ${res.status} ${res.statusText}`, res.ok ? '#0f0' : '#f00');
+                    return res.json();
+                })
                 .then(data => {
-                    const list = document.getElementById('pings-list');
+                    logDebug(`Otrzymano dane. Liczba tenantów: ${data.pings ? data.pings.length : 0}`);
                     if (data.error) {
+                        logDebug(`BŁĄD SERWERA: ${data.error}`, '#f00');
                         list.innerHTML = `<li style="color:var(--danger)">Błąd: ${data.error}</li>`;
                         return;
                     }
