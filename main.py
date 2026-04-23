@@ -3001,18 +3001,26 @@ async def get_dash_status():
         tenants = {}
         for c in containers:
             name = c.name
-            if name.endswith("_app"):
+            # Orchestrator App
+            if name == "zjedzit_app":
+                if "zjedzit" not in tenants: tenants["zjedzit"] = {}
+                tenants["zjedzit"]["app"] = c
+            # Orchestrator DB
+            elif name == "zjedzit_postgres" or name == "postgres_db":
+                if "zjedzit" not in tenants: tenants["zjedzit"] = {}
+                tenants["zjedzit"]["db"] = c
+            # Tenant Apps
+            elif name.endswith("_app"):
                 prefix = name.split("_")[0]
                 if prefix not in tenants: tenants[prefix] = {}
                 tenants[prefix]["app"] = c
-            elif name.endswith("_db") and name != "postgres_db":
+            # Tenant DBs
+            elif name.endswith("_db") or name.endswith("_postgres"):
                 prefix = name.split("_")[0]
-                if prefix == "postgres": prefix = "elvis"
+                # Avoid duplicates or mapping errors
+                if prefix == "postgres": prefix = "zjedzit"
                 if prefix not in tenants: tenants[prefix] = {}
                 tenants[prefix]["db"] = c
-            elif name == "postgres_db":
-                if "elvis" not in tenants: tenants["elvis"] = {}
-                tenants["elvis"]["db"] = c
 
         for prefix, services in tenants.items():
             app_c = services.get("app")
