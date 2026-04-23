@@ -39,23 +39,3 @@ zjedz.it, www.zjedz.it {
 :80 {
   redir https://{host}{uri} permanent
 }
-
-
-start.zjedz.it {
-    reverse_proxy start_app:8080
-}
-
-
-poiu.zjedz.it {
-    reverse_proxy poiu_app:8080
-}
-
-
-stary.zjedz.it {
-    reverse_proxy stary_app:8080
-}
-
-
-nowy.zjedz.it {
-    reverse_proxy nowy_app:8080
-}
