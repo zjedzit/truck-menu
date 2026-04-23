@@ -2987,10 +2987,13 @@ async def get_dash_status():
                     "db_size": "---",
                     "app_status": c.status,
                     "custom_template": False,
-                    "template_path": "Standard"
+                    "template_path": f"/opt/elvis/{prefix}"
                 })
+        
+        # Add the main app too if needed, or filter as per user preference
+        pass
     except Exception as e:
-        logger.error(f"DEBUG DOCKER ERROR: {str(e)}")
+        logger.error(f"DASH STATUS ERROR: {str(e)}")
         status["error"] = f"Docker Error: {str(e)}"
     return status
 
