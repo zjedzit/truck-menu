@@ -1,136 +1,58 @@
-from __future__ import annotations
-
-import os
-import re
-import uuid
+import os, uuid, json
 from datetime import datetime
-from typing import Optional
-
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy import Column, String, DateTime
-
-
-TENANT_RE = re.compile(r"^[a-z0-9-]{2,32}$")
-
-
-def _domain_root() -> str:
-    return (os.environ.get("DOMAIN_ROOT") or "zjedz.it").lower().strip()
-
-
-def extract_tenant_slug(hostname: Optional[str]) -> Optional[str]:
-    if not hostname:
-        return None
-    host = hostname.split(":")[0].lower().strip()
-    root = _domain_root()
-
-    if host in {root, f"www.{root}"}:
-        return None
-    if host == f"dash.{root}":
-        return "dash"
-
-    parts = host.split(".")
-    root_parts = root.split(".")
-    if len(parts) >= len(root_parts) + 1 and parts[-len(root_parts):] == root_parts:
-        return parts[0]
-    return None
-
-
-def require_dash_token(request: Request) -> None:
-    token = request.headers.get("X-Dash-Token")
-    expected = os.environ.get("DASH_ADMIN_TOKEN")
-    if not expected:
-        raise HTTPException(status_code=500, detail="DASH_ADMIN_TOKEN not configured")
-    if not token or token != expected:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
+from sqlalchemy import Column, String, DateTime, Boolean
+from pathlib import Path
 
 def setup_tenancy(app, SessionLocal, Base):
     class Tenant(Base):
         __tablename__ = "tenants"
         id = Column(String, primary_key=True)
-        slug = Column(String, unique=True, index=True, nullable=False)
-        name = Column(String, nullable=False)
-        status = Column(String, default="active")  # active / disabled / deleted
+        slug = Column(String, unique=True, index=True)
+        name = Column(String)
+        status = Column(String, default="active") # active, disabled
         created_at = Column(DateTime, default=datetime.utcnow)
         disabled_at = Column(DateTime, nullable=True)
-        deleted_at = Column(DateTime, nullable=True)
 
-    router = APIRouter(prefix="/api/dash", tags=["DASH Tenants"])
+    # Helper function to get domain root
+    def _domain_root():
+        return os.environ.get("DOMAIN_ROOT", "zjedz.it")
 
-    # --- Caddy ask endpoint ---
-    # Caddy calls: GET /api/dash/allow?domain=<hostname>  [1](https://deepwiki.com/lucaslorentz/caddy-docker-proxy/3.1-docker-labels)[2](https://ovh.github.io/manager/)
-    @router.get("/allow")
-    async def allow_domain(domain: str):
-        host = (domain or "").split(":")[0].lower().strip()
-        root = _domain_root()
+    router = APIRouter(prefix="/api/admin", tags=["Tenancy"])
 
-        # Always allow landing + dash
-        if host in {root, f"www.{root}", f"dash.{root}"}:
-            return {"ok": True}
+    def require_dash_token(request: Request):
+        token = os.environ.get("DASH_ADMIN_TOKEN", "elvis-secure-token")
+        provided = request.headers.get("X-Dash-Token") or request.query_params.get("token")
+        if provided != token:
+            raise HTTPException(status_code=403, detail="Brak uprawnień administratora")
 
-        # Deny if it's not a proper tenant host
-        slug = extract_tenant_slug(host)
-        if not slug or slug == "dash":
-            return JSONResponse(status_code=403, content={"ok": False})
-
-        db = SessionLocal()
-        try:
-            tenant = db.query(Tenant).filter(Tenant.slug == slug).first()
-            if not tenant or tenant.status != "active":
-                return JSONResponse(status_code=403, content={"ok": False})
-            return {"ok": True}
-        finally:
-            db.close()
-
-    # --- CRUD tenants (DASH) ---
     @router.get("/tenants")
     async def list_tenants(request: Request):
         require_dash_token(request)
         db = SessionLocal()
         try:
-            tenants = db.query(Tenant).order_by(Tenant.created_at.desc()).all()
-            return {
-                "ok": True,
-                "tenants": [
-                    {
-                        "slug": t.slug,
-                        "name": t.name,
-                        "status": t.status,
-                        "created_at": t.created_at.isoformat() if t.created_at else None,
-                        "disabled_at": t.disabled_at.isoformat() if t.disabled_at else None,
-                    }
-                    for t in tenants
-                ],
-            }
+            tenants = db.query(Tenant).all()
+            return [{"slug": t.slug, "name": t.name, "status": t.status, "fqdn": f"{t.slug}.{_domain_root()}"} for t in tenants]
         finally:
             db.close()
 
     @router.post("/tenants")
-    async def create_tenant(request: Request):
+    async def create_tenant_entry(request: Request):
         require_dash_token(request)
         data = await request.json()
-        slug = (data.get("slug") or "").lower().strip()
-        name = (data.get("name") or slug).strip()
-
-        if not TENANT_RE.match(slug):
-            return JSONResponse(status_code=400, content={"ok": False, "error": "Zły slug (2-32, a-z0-9-)"})
-
-        if slug in {"dash", "www", "admin"}:
-            return JSONResponse(status_code=400, content={"ok": False, "error": "Slug zarezerwowany"})
+        slug = data.get("slug").lower().strip()
+        name = data.get("name", slug.capitalize())
+        
+        if not slug:
+            return JSONResponse(status_code=400, content={"ok": False, "error": "Brak sluga"})
 
         db = SessionLocal()
         try:
             existing = db.query(Tenant).filter(Tenant.slug == slug).first()
-            if existing and existing.status == "active":
-                return JSONResponse(status_code=409, content={"ok": False, "error": "Tenant już istnieje"})
-
-            if existing and existing.status != "active":
+            if existing:
                 existing.status = "active"
-                existing.disabled_at = None
-                existing.deleted_at = None
-                if name:
-                    existing.name = name
+                existing.name = name
             else:
                 t = Tenant(id=str(uuid.uuid4()), slug=slug, name=name, status="active")
                 db.add(t)
