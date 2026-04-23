@@ -2973,12 +2973,16 @@ async def get_dash_status():
         containers = client.containers.list(all=True)
         logger.info(f"DEBUG DOCKER: Found {len(containers)} containers total.")
         
+        found = []
         for c in containers:
-            logger.info(f"DEBUG DOCKER: Seen container => {c.name} (Status: {c.status})")
             name = c.name
-            if name.endswith("_app") or name == "zjedzit_app":
-                prefix = "elvis" if name == "zjedzit_app" else name.split("_")[0]
-                status["pings"].append({
+            # Accept zjedzit_app or anything ending with _app
+            if name == "zjedzit_app" or name.endswith("_app"):
+                # Extract prefix: 'nowy_app' -> 'nowy', 'zjedzit_app' -> 'zjedzit'
+                prefix = name.replace("_app", "")
+                if prefix == "zjedzit": prefix = "elvis" # display as elvis
+                
+                found.append({
                     "domain": f"{prefix}.zjedz.it",
                     "alive": c.status == "running",
                     "db_alive": True,
@@ -2989,6 +2993,7 @@ async def get_dash_status():
                     "custom_template": False,
                     "template_path": "Standard"
                 })
+        status["pings"] = found
     except Exception as e:
         logger.error(f"DEBUG DOCKER ERROR: {str(e)}")
         status["error"] = f"Docker Error: {str(e)}"
