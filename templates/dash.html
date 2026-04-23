@@ -300,8 +300,22 @@
                     <line x1="6" y1="6" x2="6.01" y2="6"></line>
                     <line x1="6" y1="18" x2="6.01" y2="18"></line>
                 </svg> Aktywne Środowiska</h2>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div class="stat-card" id="status-docker">
+                    <span class="stat-label">Docker Engine</span>
+                    <span class="stat-value">ŁĄCZENIE...</span>
+                </div>
+                <div class="stat-card" id="status-db">
+                    <span class="stat-label">Main Database</span>
+                    <span class="stat-value">ŁĄCZENIE...</span>
+                </div>
+                <div class="stat-card" id="status-count">
+                    <span class="stat-label">Aktywne Lokale</span>
+                    <span class="stat-value">0</span>
+                </div>
+            </div>
             <ul id="pings-list">
-                <li class="loading">Ładowanie infrastruktury Docker...</li>
+                <li class="loading">Ładowanie listy...</li>
             </ul>
         </div>
 
@@ -334,16 +348,6 @@
                 </div>
 
                 <div style="display: grid; gap: 15px; margin-bottom: 15px;">
-                </div>
-            </div>
-        </div>
-
-        <div class="card" style="margin-top: 30px; background: #000; border: 1px solid #333; font-family: monospace;">
-            <h3 style="color: #0f0; font-size: 0.8em; margin-bottom: 10px;">> DIAGNOSTYKA SYSTEMOWA</h3>
-            <div id="debug-console" style="font-size: 0.85em; color: #aaa; max-height: 200px; overflow-y: auto;">
-                Oczekiwanie na start diagnostyki...
-            </div>
-        </div>
                     <div>
                         <label>Model Gemini</label>
                         <input type="text" id="ai-model-name" placeholder="gemini-2.5-flash">
@@ -365,6 +369,13 @@
                 </div>
                 <div id="ai-test-result"
                     style="margin-top: 15px; font-size: 0.8em; display: none; padding: 12px; border-radius: 8px;"></div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 30px; background: #000; border: 1px solid #333; font-family: monospace;">
+            <h3 style="color: #0f0; font-size: 0.8em; margin-bottom: 10px;">> DIAGNOSTYKA SYSTEMOWA</h3>
+            <div id="debug-console" style="font-size: 0.85em; color: #aaa; max-height: 200px; overflow-y: auto;">
+                Oczekiwanie na start diagnostyki...
             </div>
         </div>
     </div>
@@ -403,7 +414,7 @@
 
             err.style.display = 'block';
             err.style.background = 'rgba(74, 144, 226, 0.1)';
-            err.style.color = var(--primary);
+            err.style.color = 'var(--primary)';
             err.innerText = "Budowanie kontenerów... Może to zająć do 30s.";
 
             try {
@@ -480,6 +491,23 @@
                     return res.json();
                 })
                 .then(data => {
+                    // Update Widgets
+                    const dockerWidget = document.getElementById('status-docker');
+                    const dbWidget = document.getElementById('status-db');
+                    const countWidget = document.getElementById('status-count');
+
+                    if (dockerWidget) {
+                        dockerWidget.querySelector('.stat-value').innerText = data.error && data.error.includes("Docker") ? "BŁĄD" : "OK";
+                        dockerWidget.querySelector('.stat-value').style.color = data.error && data.error.includes("Docker") ? "var(--danger)" : "var(--success)";
+                    }
+                    if (dbWidget) {
+                        dbWidget.querySelector('.stat-value').innerText = data.db_alive ? "OK" : "BŁĄD";
+                        dbWidget.querySelector('.stat-value').style.color = data.db_alive ? "var(--success)" : "var(--danger)";
+                    }
+                    if (countWidget) {
+                        countWidget.querySelector('.stat-value').innerText = data.pings ? data.pings.length : 0;
+                    }
+
                     logDebug(`Otrzymano dane. Liczba tenantów: ${data.pings ? data.pings.length : 0}`);
                     if (data.error) {
                         logDebug(`BŁĄD SERWERA: ${data.error}`, '#f00');

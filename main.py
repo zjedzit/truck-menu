@@ -2965,16 +2965,25 @@ async def health_check():
 
 @app.get("/api/dash/status")
 async def get_dash_status():
-    """Ultra-minimal version with DEBUG logging"""
-    status = {"db_alive": True, "db_size": "---", "pings": []}
+    """Detailed health check for Docker, DB, and Tenants"""
+    status = {"db_alive": False, "db_size": "---", "pings": []}
+    
+    # 1. Check DB
+    try:
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        status["db_alive"] = True
+        db.close()
+    except Exception as db_err:
+        logger.error(f"DASH DB ERROR: {db_err}")
+
+    # 2. Check Docker
     try:
         import docker
         client = docker.from_env()
         containers = client.containers.list(all=True)
-        logger.info(f"DEBUG DOCKER: Found {len(containers)} containers total.")
         
         for c in containers:
-            logger.info(f"DEBUG DOCKER: Seen container => {c.name} (Status: {c.status})")
             name = c.name
             if name.endswith("_app") or name == "zjedzit_app":
                 prefix = "elvis" if name == "zjedzit_app" else name.split("_")[0]
@@ -2989,11 +2998,11 @@ async def get_dash_status():
                     "custom_template": False,
                     "template_path": f"/opt/elvis/{prefix}"
                 })
-        
-        logger.info(f"DEBUG DOCKER: Returning {len(status['pings'])} results to dash.")
+        logger.info(f"DASH: Found {len(status['pings'])} tenant containers.")
     except Exception as e:
-        logger.error(f"DASH STATUS ERROR: {str(e)}")
+        logger.error(f"DASH DOCKER ERROR: {str(e)}")
         status["error"] = f"Docker Error: {str(e)}"
+        
     return status
 
 @app.get("/test_docker")
