@@ -3067,6 +3067,27 @@ async def get_dash_status():
 
     return status
 
+@app.get("/api/dash/allow")
+async def allow_domain(domain: str):
+    """Caddy calls this to check if it should issue an SSL certificate for a domain"""
+    # Allow main domains and anything that looks like our tenants
+    allowed_roots = ["zjedz.it", "start.zjedz.it"]
+    if any(domain == root or domain.endswith(f".{root}") for root in allowed_roots):
+        return Response(status_code=200)
+    
+    # Check database for tenant slugs
+    try:
+        db = SessionLocal()
+        slug = domain.split(".")[0]
+        exists = db.query(Tenant).filter(Tenant.slug == slug).first()
+        db.close()
+        if exists:
+            return Response(status_code=200)
+    except:
+        pass
+
+    return Response(status_code=403)
+
 class TenantRequest(BaseModel):
     tenant: str
     pin: str
