@@ -599,7 +599,12 @@
         }
 
         document.getElementById('ai-master-pin').addEventListener('blur', loadAIStatus);
-        setInterval(loadStatus, 20000); // Odświeżaj co 20 sekund wg życzenia
+        
+        // Inicjalizacja konsoli
+        const debugConsole = document.getElementById('debug-console');
+        if (debugConsole) debugConsole.innerHTML = '<div style="color:#0f0">[SYSTEM] Dashboard UI Initialized.</div>';
+
+        setInterval(loadStatus, 20000); 
         loadStatus();
         loadAIStatus();
     </script>
