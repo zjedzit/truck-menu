@@ -286,10 +286,10 @@
         <div class="card" style="margin-bottom: 30px; border-left: 4px solid var(--primary); background: linear-gradient(90deg, rgba(74,144,226,0.1) 0%, transparent 100%);">
             <h3 style="margin-bottom: 10px; color: var(--primary);">O Systemie</h3>
             <p style="font-size: 0.95em; color: rgba(255,255,255,0.7); line-height: 1.6;">
-                Witaj w centrum dowodzenia <strong>Elvis POS Multi-Tenant</strong>. 
-                Ten panel pozwala na pełne zarządzanie infrastrukturą serwerową Twojej sieci gastronomicznej. 
-                Możesz tu błyskawicznie stawiać nowe środowiska (Tenanty), monitorować ich stan techniczny (Health-Check), 
-                sprawdzać zajętość bazy danych oraz zarządzać cyklem życia subdomen.
+                Witaj w centrum dowodzenia <strong>Elvis POS Unified Cloud</strong>. 
+                Ten panel pozwala na błyskawiczne zarządzanie siecią Twoich lokali gastronomicznych. 
+                Dzięki architekturze <strong>Shared-Instance</strong>, dodawanie nowej restauracji jest natychmiastowe 
+                i nie zużywa dodatkowej pamięci RAM Twojego serwera VPS.
             </p>
         </div>
 
@@ -319,7 +319,7 @@
                 </div>
             </div>
             <ul id="pings-list">
-                <li class="loading">Ładowanie listy...</li>
+                <li class="loading">Ładowanie bazy restauracji...</li>
             </ul>
         </div>
 
@@ -327,7 +327,7 @@
             <div class="card">
                 <h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 5v14M5 12h14"></path>
-                    </svg> Nowy Tenant</h2>
+                    </svg> Dodaj Restaurację</h2>
                 <div class="form-group">
                     <label>Nazwa subdomeny</label>
                     <input type="text" id="tenant_name" placeholder="np. kawiarnia" autocomplete="off">
@@ -340,7 +340,7 @@
                     <label>Opcjonalny Token AI</label>
                     <input type="password" id="tenant_ai_token" placeholder="Domyślny jeśli puste">
                 </div>
-                <button class="btn" style="width: 100%;" onclick="createTenant()">POSTAW SERWER</button>
+                <button class="btn" style="width: 100%;" onclick="createTenant()">DODAJ RESTAURACJĘ</button>
                 <div id="error-msg"></div>
             </div>
 
@@ -426,7 +426,7 @@
             err.style.display = 'block';
             err.style.background = 'rgba(74, 144, 226, 0.1)';
             err.style.color = 'var(--primary)';
-            err.innerText = "Budowanie kontenerów... Może to zająć do 30s.";
+            err.innerText = "Rejestracja w bazie danych...";
 
             try {
                 const res = await fetch('/api/dash/create_tenant', {
@@ -469,7 +469,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert("Pomyślnie usunięto tenanta i zwolniono zasoby.");
+                    alert("Pomyślnie usunięto restaurację.");
                     loadStatus();
                 } else {
                     alert("Błąd: " + data.error);
@@ -558,7 +558,7 @@
                                 <div class="tenant-header">
                                     <div class="tenant-info">
                                         <h3>${p.domain}</h3>
-                                        <div class="tenant-path">KONTENER: ${p.app_status.toUpperCase()}</div>
+                                        <div class="tenant-path">TRYB: Shared Cloud Instance</div>
                                     </div>
                                     <div style="display: flex; gap: 10px; align-items: center;">
                                         <div class="status-badge">
