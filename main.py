@@ -105,17 +105,28 @@ from tenancy import extract_tenant_slug
 
 @app.middleware("http")
 async def tenant_middleware(request: Request, call_next):
-    hostname = request.headers.get("host")
+    hostname = request.headers.get("host", "")
     slug = extract_tenant_slug(hostname)
     
-    # "dash" is a special system tenant or just the dashboard
+    # Check for tenant override (only allowed for system/dash host)
+    override_tenant = request.headers.get("X-Tenant-ID")
+    
     if slug == "dash":
-        tenant_context.set("system")
+        if override_tenant:
+            tenant_context.set(override_tenant)
+        else:
+            tenant_context.set("system")
     else:
         tenant_context.set(slug)
     
+    # Path-based restriction: /dash only on dash. subdomain
+    path = request.url.path
+    if path.startswith("/dash") and slug != "dash":
+        return JSONResponse({"ok": False, "error": "Dashboard available only on dash subdomain."}, status_code=403)
+        
     response = await call_next(request)
     return response
+
 
 # --- HARDWARE & PRINTER API ---
 @app.post("/api/hardware/print")
@@ -337,8 +348,7 @@ def get_system_mode():
         return "restaurant" # Default for dashboard/system
 
     try:
-        conn = get_db()
-        if conn:
+        with get_db() as conn:
             # Check for restaurant-specific mode in the 'restaurants' table
             rest = conn.session.query(Restaurant).filter(Restaurant.id == current_tenant).first()
             if rest:
@@ -346,7 +356,8 @@ def get_system_mode():
     except Exception as e:
         logger.error(f"Error in get_system_mode for {current_tenant}: {e}")
     
-    return "restaurant"
+    return "foodtruck" # Default to foodtruck for tenants if not specified
+
 
 def is_nfc_required():
     try:
@@ -407,25 +418,38 @@ class SessionResponse(BaseModel):
     timestamp: datetime
 
 # Session management - now persistent in MongoDB
-MAX_SESSIONS = 30
+# --- QR & SESSION TRACKING ---
+MAX_SESSIONS = 1000
+
+def generate_session_token(length=6):
+    import string
+    chars = string.ascii_uppercase + string.digits
+    return ''.join(random.choice(chars) for _ in range(length))
 
 def get_next_session_number():
-    """Get next available session number (1-30). If full, recycles oldest."""
+    """Get unique short token for session identifier (e.g. 6 chars)"""
     conn = get_db()
-    if conn is None: return 1
+    if conn is None: return generate_session_token()
     
-    active_tables_list = list(conn["active_tables"].find({}))
-    used_numbers = [int(t["_id"]) for t in active_tables_list if str(t["_id"]).isdigit()]
-    
-    # 1. Try to find a gap
-    for n in range(1, MAX_SESSIONS + 1):
-        if n not in used_numbers:
-            return n
+    # Próbujemy wygenerować unikalny kod
+    for _ in range(10):
+        token = generate_session_token()
+        existing = conn["active_tables"].find_one({"_id": token})
+        if not existing:
+            return token
+    return generate_session_token(8)
 
-    # 2. Recycle: reset all active tables and start from 1 as requested
-    print("WARNING: All sessions taken. Resetting active_tables.")
-    conn["active_tables"].delete_many({})
-    return 1
+def load_menu_data():
+    """Wczytuje menu dla bieżącego tenanta (Tenant-Aware)"""
+    db_conn = get_db()
+    if db_conn is None: return {}
+    menu_list = db_conn["menu"].find({})
+    menu_dict = {d["_id"]: {k: v for k, v in d.items() if k != "_id"} for d in menu_list}
+    try:
+        return dict(sorted(menu_dict.items(), key=lambda x: int(x[1].get('sort_order', 99))))
+    except:
+        return menu_dict
+
     
 def create_session(customer_name: str = None, mode: str = "restaurant"):
     """Create new session with unique ID and session number and save to DB"""
@@ -1354,9 +1378,18 @@ class CollectionWrapper:
                     current_tenant = tenant_context.get()
                     if current_tenant and current_tenant != "system" and hasattr(new_item, "tenant_id"):
                         new_item.tenant_id = current_tenant
+                    elif not current_tenant or current_tenant == "system":
+                        # If we are in system mode, we MUST have a tenant_id in changes or it will fail
+                        if "tenant_id" in changes:
+                            new_item.tenant_id = changes["tenant_id"]
+                        else:
+                            # Fallback to a special 'global' or 'system' tenant if necessary
+                            # but for MenuItem it's better to fail than to save without tenant
+                            logger.warning(f"Upserting {self.name} without tenant_id in system mode!")
                     
                     self.session.add(new_item)
                     self.session.commit()
+
         except Exception as e:
             logger.error(f"Error in update_one({self.name}): {e}")
             self.session.rollback()
@@ -1919,15 +1952,21 @@ def get_brand(request: Request = None):
     env_brand = os.environ.get("BRAND")
     if env_brand: return env_brand
     
-    # 1. Dynamic from subdomain (e.g. bar.zjedz.it -> BAR)
+    # 1. Dynamic from tenant context
+    current_tenant = tenant_context.get()
+    if current_tenant and current_tenant != "system":
+        return current_tenant.upper()
+        
+    # 2. Dynamic from subdomain
     if request:
         host = request.url.hostname
         if host and "zjedz.it" in host:
             parts = host.split('.')
-            if len(parts) >= 3:
+            if len(parts) >= 3 and parts[0] != "dash":
                 return parts[0].upper()
     
-    return "ZJEDZ.IT"
+    return "DASH"
+
 
 @app.get("/api/get_layout")
 async def get_layout():
@@ -2936,15 +2975,16 @@ async def zamowienie_entry(request: Request, burger_session: Optional[str] = Coo
 
 @app.get("/", response_class=HTMLResponse)
 async def index_page(request: Request, table: Optional[str] = None, q: Optional[str] = None, burger_session: Optional[str] = Cookie(None)):
-    if q and not table:
-        with get_db() as db:
-            # Sprawdź czy kod nie jest zużyty
-            res = db.execute(text("SELECT is_used FROM qr_tokens WHERE token = :t"), {"t": q}).fetchone()
-            if res and res[0]: # is_used == True
-                return HTMLResponse(content="<div style='background:#000;color:#fff;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;text-align:center;'><h1>🛑 KOD WYGASŁ</h1><p>Ten kod QR został już wykorzystany. Poproś obsługę o nowy kod do zamówienia.</p></div>", status_code=403)
-        table = q
-    if get_brand(request) == "DASH":
+    hostname = request.headers.get("host", "").lower()
+    slug = extract_tenant_slug(hostname)
+
+    # 1. Enforcement: dash subdomain shows dash.html
+    if slug == "dash":
         return templates.TemplateResponse(request=request, name="dash.html", context={"request": request})
+
+    # 2. Handle 'q' token (Foodtruck mode)
+    if q and not table:
+        table = q
 
     if not burger_session:
         burger_session = str(uuid.uuid4())
@@ -2953,10 +2993,9 @@ async def index_page(request: Request, table: Optional[str] = None, q: Optional[
     if db_conn is None:
         return HTMLResponse(content=f"<h1>Błąd połączenia z bazą danych ({get_brand(request)})</h1><p>System startuje lub baza jest niedostępna. Spróbuj odświeżyć za chwilę.</p>", status_code=503)
 
-    menu_dict = {d["_id"]: {k: v for k, v in d.items() if k != "_id"} for d in db_conn["menu"].find({})}
-    menu = dict(sorted(menu_dict.items(), key=lambda x: int(x[1].get('sort_order', 99))))
+    # Load menu using the new helper
+    menu = load_menu_data()
 
-    # JAWNY SŁOWNIK CONTEXT
     ctx = {
         "request": request,
         "menu": menu,
@@ -2964,7 +3003,8 @@ async def index_page(request: Request, table: Optional[str] = None, q: Optional[
         "table_locked": False,
         "locked_num": None,
         "my_session_id": burger_session,
-        "system_mode": get_system_mode()
+        "system_mode": get_system_mode(),
+        "brand": get_brand(request)
     }
 
     if table:
@@ -2981,10 +3021,10 @@ async def index_page(request: Request, table: Optional[str] = None, q: Optional[
             if not ctx["table_locked"]:
                 conn["active_tables"].update_one({"_id": str(table)}, {"$set": {"table_number": str(table), "session_id": burger_session}}, upsert=True)
 
-    ctx["brand"] = get_brand(request)
     resp = templates.TemplateResponse(request=request, name="index.html", context=ctx)
     resp.set_cookie(key="burger_session", value=burger_session, max_age=86400)
     return resp
+
 
 @app.get("/wydawka", response_class=HTMLResponse)
 async def wydawka_page(request: Request):
@@ -3035,11 +3075,17 @@ async def waiter(request: Request):
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin(request: Request):
+    hostname = request.headers.get("host", "").lower()
+    slug = extract_tenant_slug(hostname)
+    if slug == "dash":
+        return HTMLResponse(content="<h1>🛑 Błąd</h1><p>Panel admina restauracji nie jest dostępny na domenie systemowej. Użyj domeny swojej restauracji.</p>", status_code=403)
+        
     return templates.TemplateResponse(request=request, name="admin.html", context={
         "request": request, 
         "brand": get_brand(request),
         "system_mode": get_system_mode()
     })
+
 
 @app.get("/master", response_class=HTMLResponse)
 async def master_page(request: Request):
@@ -3244,4 +3290,10 @@ async def delete_tenant(payload: TenantRequest):
 
 @app.get("/dash", response_class=HTMLResponse)
 async def dash_page(request: Request):
-    return templates.TemplateResponse(request=request, name="dash.html", context={"request": request})
+    hostname = request.headers.get("host", "").lower()
+    slug = extract_tenant_slug(hostname)
+    if slug != "dash":
+        return RedirectResponse(url="/") # Przekieruj na stronę główną jeśli ktoś wejdzie na stary.zjedz.it/dash
+        
+    return templates.TemplateResponse(request=request, name="dash.html", context={"request": request})
+
