@@ -2983,8 +2983,12 @@ async def get_dash_status():
         client = docker.from_env()
         containers = client.containers.list(all=True)
         
+        db_count = 0
         for c in containers:
             name = c.name
+            if "_db" in name or "postgres" in name:
+                db_count += 1
+                
             if name.endswith("_app") or name == "zjedzit_app":
                 prefix = "elvis" if name == "zjedzit_app" else name.split("_")[0]
                 is_running = c.status == "running"
@@ -3000,7 +3004,8 @@ async def get_dash_status():
                     "custom_template": False,
                     "template_path": f"/opt/elvis/{prefix}"
                 })
-        logger.info(f"DASH: Found {len(status['pings'])} tenant containers.")
+        status["db_instances"] = db_count
+        logger.info(f"DASH: Found {len(status['pings'])} tenant containers and {db_count} DBs.")
     except Exception as e:
         logger.error(f"DASH DOCKER ERROR: {str(e)}")
         status["error"] = f"Docker Error: {str(e)}"

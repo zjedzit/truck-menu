@@ -300,7 +300,7 @@
                     <line x1="6" y1="6" x2="6.01" y2="6"></line>
                     <line x1="6" y1="18" x2="6.01" y2="18"></line>
                 </svg> Aktywne Środowiska</h2>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
                 <div class="stat-card" id="status-docker">
                     <span class="stat-label">Docker Engine</span>
                     <span class="stat-value">ŁĄCZENIE...</span>
@@ -311,6 +311,10 @@
                 </div>
                 <div class="stat-card" id="status-count">
                     <span class="stat-label">Aktywne Lokale</span>
+                    <span class="stat-value">0</span>
+                </div>
+                <div class="stat-card" id="status-db-count">
+                    <span class="stat-label">Instancje DB</span>
                     <span class="stat-value">0</span>
                 </div>
             </div>
@@ -495,6 +499,7 @@
                     const dockerWidget = document.getElementById('status-docker');
                     const dbWidget = document.getElementById('status-db');
                     const countWidget = document.getElementById('status-count');
+                    const dbCountWidget = document.getElementById('status-db-count');
 
                     if (dockerWidget) {
                         dockerWidget.querySelector('.stat-value').innerText = data.error && data.error.includes("Docker") ? "BŁĄD" : "OK";
@@ -506,6 +511,9 @@
                     }
                     if (countWidget) {
                         countWidget.querySelector('.stat-value').innerText = data.pings ? data.pings.length : 0;
+                    }
+                    if (dbCountWidget) {
+                        dbCountWidget.querySelector('.stat-value').innerText = data.db_instances || 0;
                     }
 
                     logDebug(`Otrzymano dane. Liczba tenantów: ${data.pings ? data.pings.length : 0}`);
