@@ -7,6 +7,8 @@ Ten dokument przedstawia strategiczny plan rozwoju systemu Elvis POS, koncentruj
 
 - [ ] **Unified Printer API**: Stworzenie ujednoliconego interfejsu dla drukarek bonowych (ESC/POS) działającego przez WebSocket.
 - [ ] **Integracja Fiskalna**: Obsługa protokołów Posnet/Novitus dla polskich drukarek fiskalnych (wymaga lokalnego agenta na terminalu T520).
+- [ ] **Edge Offline Sync**: Implementacja lokalnej kolejki zamówień (SQLite/IndexedDB), umożliwiającej sprzedaż przy braku internetu i automatyczną synchronizację z OVH po odzyskaniu połączenia.
+- [ ] **NFC RCP Access Control**: System logowania personelu (Rejestracja Czasu Pracy) przez NFC. Blokada funkcji krytycznych (rabaty, zwroty, raporty) dla osób nieuprawnionych.
 - [ ] **Hardware Health Monitoring**: Podgląd statusu online/offline drukarek i terminali w panelu Master/Admin.
 - [ ] **QR Kitchen Labels**: Automatyczne drukowanie etykiet z QR kodem dla zamówień na wynos.
 
@@ -46,11 +48,15 @@ graph LR
     
     subgraph Local_Edge_T520
         Gateway[Elvis Hardware Gateway]
+        LocalStorage[(Offline Sync Queue)]
+        NFC[Czytnik NFC/RCP]
         Printer1[Drukarka Bonowa]
         Printer2[Drukarka Fiskalna]
     end
     
     FastAPI -- WebSocket / TLS --> Gateway
+    Gateway <--> LocalStorage
+    Gateway -- USB --> NFC
     Gateway -- USB/Serial --> Printer1
     Gateway -- USB/Serial --> Printer2
 ```

@@ -4,283 +4,500 @@
     <meta charset="UTF-8">
     <title>Zjedz.it Orchestrator Dash</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; background: #0a0a0a; color: #f0f0f0; padding: 30px; margin: 0; line-height: 1.6; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .card { background: #141414; border: 1px solid #222; padding: 24px; border-radius: 12px; margin-bottom: 24px; }
-        .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #dc3545; margin-right: 8px; box-shadow: 0 0 10px rgba(220,53,69,0.5); }
-        .status-dot.active { background: #28a745; box-shadow: 0 0 10px rgba(40,167,69,0.5); }
-        h1 { margin-top: 0; color: #4a90e2; font-size: 2.2em; font-weight: 800; letter-spacing: -0.02em; }
-        h2 { margin-top: 0; font-size: 1.3em; margin-bottom: 20px; color: #4a90e2; }
+        :root {
+            --bg: #050505;
+            --card-bg: rgba(20, 20, 20, 0.8);
+            --border: rgba(255, 255, 255, 0.1);
+            --primary: #4a90e2;
+            --primary-glow: rgba(74, 144, 226, 0.3);
+            --danger: #ff4d4d;
+            --success: #2ecc71;
+            --text: #f0f0f0;
+            --text-dim: #888;
+        }
+
+        body { 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            padding: 40px 20px; 
+            margin: 0; 
+            line-height: 1.6;
+            background-image: radial-gradient(circle at 50% -20%, #1a1a1a 0%, #050505 100%);
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+        }
+
+        h1 { 
+            margin: 0; 
+            color: var(--text); 
+            font-size: 2.5em; 
+            font-weight: 800; 
+            letter-spacing: -0.04em;
+            background: linear-gradient(to right, #fff, #888);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border); 
+            padding: 30px; 
+            border-radius: 20px; 
+            margin-bottom: 30px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+        }
+
+        h2 { 
+            margin-top: 0; 
+            font-size: 1.4em; 
+            margin-bottom: 25px; 
+            color: var(--primary); 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         ul { list-style: none; padding: 0; margin: 0; }
-        li { background: #1c1c1c; margin-bottom: 12px; padding: 18px; border-radius: 8px; border: 1px solid #2a2a2a; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-        .stat-group { display: flex; gap: 20px; font-size: 0.9em; color: #aaa; }
-        .stat-item { display: flex; align-items: center; }
-        .stat-item strong { color: #fff; margin-left: 6px; }
-        .btn { background: #4a90e2; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn:hover { background: #357abd; }
-        input[type="text"], input[type="password"] { background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 10px 14px; border-radius: 6px; font-size: 1em; width: calc(100% - 30px); margin-bottom: 14px; }
-        .form-group { max-width: 400px; }
-        label { display: block; margin-bottom: 6px; font-size: 0.9em; color: #bbb; }
-        #error-msg { color: #ff6b6b; margin-top: 10px; font-size: 0.9em; }
+
+        li { 
+            background: rgba(255, 255, 255, 0.03); 
+            margin-bottom: 15px; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column;
+            gap: 15px;
+            transition: all 0.2s ease;
+        }
+        
+        li:hover {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tenant-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .tenant-info h3 {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .tenant-path {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            font-family: monospace;
+            margin-top: 4px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8em;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .status-dot { 
+            width: 8px; 
+            height: 8px; 
+            border-radius: 50%; 
+            background: var(--danger); 
+            box-shadow: 0 0 10px var(--danger); 
+        }
+        
+        .status-dot.active { 
+            background: var(--success); 
+            box-shadow: 0 0 10px var(--success); 
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: rgba(0,0,0,0.2);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.85em;
+        }
+
+        .stat-label { color: var(--text-dim); display: block; margin-bottom: 2px; font-size: 0.8em; text-transform: uppercase; }
+        .stat-value { font-weight: 600; color: #fff; }
+
+        .btn { 
+            background: var(--primary); 
+            color: #fff; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 10px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--primary-glow);
+        }
+
+        .btn-danger {
+            background: transparent;
+            border: 1px solid rgba(255, 77, 77, 0.3);
+            color: var(--danger);
+            padding: 8px 16px;
+            font-size: 0.8em;
+            box-shadow: none;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255, 77, 77, 0.3);
+        }
+
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-size: 0.85em; color: var(--text-dim); font-weight: 500; }
+
+        input { 
+            background: rgba(0,0,0,0.4); 
+            border: 1px solid var(--border); 
+            color: #fff; 
+            padding: 12px 16px; 
+            border-radius: 10px; 
+            font-size: 1em; 
+            width: 100%; 
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        #error-msg { 
+            margin-top: 15px; 
+            font-size: 0.9em; 
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .latency-chart {
+            display: flex;
+            gap: 2px;
+            align-items: flex-end;
+            height: 24px;
+            background: rgba(0,0,0,0.2);
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .bar { width: 4px; border-radius: 1px; }
+
+        /* Animation for loading */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .loading { animation: pulse 1.5s infinite; color: var(--text-dim); }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Zjedz.it Orchestrator</h1>
+        <div class="header">
+            <h1>Zjedz.it Orchestrator</h1>
+            <div id="global-status" class="status-badge">
+                <span class="status-dot active"></span> SYSTEM STABLE
+            </div>
+        </div>
         
         <div class="card">
-            <h2>Aktywne Środowiska (Subdomeny)</h2>
+            <h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg> Aktywne Środowiska</h2>
             <ul id="pings-list">
-                <li>Ładowanie infrastruktury Docker...</li>
+                <li class="loading">Ładowanie infrastruktury Docker...</li>
             </ul>
         </div>
 
-        <div class="card">
-            <h2>Postaw Nową Knajpę (Tenant)</h2>
-            <div class="form-group">
-                <label>Nazwa subdomeny (np. pizza dla pizza.zjedz.it):</label>
-                <input type="text" id="tenant_name" placeholder="np. kawiarnia" autocomplete="off">
-                <label>PIN Autoryzacji Architekta:</label>
-                <input type="password" id="master_pin" placeholder="****">
-                <label>Token AI (Opcjonalny - osobny rachunek):</label>
-                <input type="password" id="tenant_ai_token" placeholder="zostaw puste by używać głównego">
-                <button class="btn" onclick="createTenant()">POSTAW SERWER</button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+            <div class="card">
+                <h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg> Nowy Tenant</h2>
+                <div class="form-group">
+                    <label>Nazwa subdomeny</label>
+                    <input type="text" id="tenant_name" placeholder="np. kawiarnia" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>PIN Autoryzacji</label>
+                    <input type="password" id="master_pin" placeholder="****">
+                </div>
+                <div class="form-group">
+                    <label>Opcjonalny Token AI</label>
+                    <input type="password" id="tenant_ai_token" placeholder="Domyślny jeśli puste">
+                </div>
+                <button class="btn" style="width: 100%;" onclick="createTenant()">POSTAW SERWER</button>
                 <div id="error-msg"></div>
             </div>
-        </div>
-    </div>
 
-        <div class="card" id="ai-zone" style="border-left: 4px solid #4a90e2;">
-            <h2>🤖 Diagnostyka AI (Duch Burgera)</h2>
-            <p>Status połączenia z modelem Gemini. Konfiguracja będzie używana we wszystkich nowowypuszczonych kontenerach.</p>
-            <div id="ai-status-info" style="margin-bottom: 20px; padding: 15px; background: #000; border-radius: 8px; border: 1px solid #333;">
-                Ładowanie statusu...
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                <div>
-                    <label style="font-size: 0.75em; color: #888; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px; display:block;">Model Gemini</label>
-                    <input type="text" id="ai-model-name" placeholder="np. gemini-2.5-flash" style="background:#111; color:#fff; border:1px solid #333; padding:12px; border-radius:8px; width:100%; box-sizing:border-box;">
+            <div class="card" id="ai-zone" style="border-top: 4px solid var(--primary);">
+                <h2>🤖 Diagnostyka AI</h2>
+                <div id="ai-status-info" style="margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 12px; font-size: 0.9em;">
+                    Wpisz PIN by zobaczyć status...
                 </div>
-                <div>
-                    <label style="font-size: 0.75em; color: #888; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px; display:block;">Klucz API Gemini (zostaw puste by nie zmieniać)</label>
-                    <input type="password" id="ai-api-key" placeholder="Wklej nowy klucz..." style="background:#111; color:#fff; border:1px solid #333; padding:12px; border-radius:8px; width:100%; box-sizing:border-box;">
+                
+                <div style="display: grid; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label>Model Gemini</label>
+                        <input type="text" id="ai-model-name" placeholder="gemini-2.5-flash">
+                    </div>
+                    <div>
+                        <label>Klucz API</label>
+                        <input type="password" id="ai-api-key" placeholder="Zostaw puste by nie zmieniać">
+                    </div>
                 </div>
+                <div class="form-group">
+                    <label>Potwierdź PIN</label>
+                    <input type="password" id="ai-master-pin" placeholder="****">
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="btn" style="background: rgba(255,255,255,0.05); color: #fff; box-shadow: none;" onclick="testAI()">TEST</button>
+                    <button class="btn" onclick="saveAIConfig()">ZAPISZ</button>
+                </div>
+                <div id="ai-test-result" style="margin-top: 15px; font-size: 0.8em; display: none; padding: 12px; border-radius: 8px;"></div>
             </div>
-            <label style="font-size: 0.75em; color: #888; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px; display:block;">PIN Architekta (Wymagany do zmian AI)</label>
-            <input type="password" id="ai-master-pin" placeholder="****" style="background:#111; color:#fff; border:1px solid #333; padding:12px; border-radius:8px; width:100%; box-sizing:border-box; margin-bottom:10px;">
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button class="btn" style="background: #333; color: white;" onclick="testAI()">TESTUJ POŁĄCZENIE</button>
-                <button class="btn" onclick="saveAIConfig()">ZAPISZ KONFIGURACJĘ API</button>
-            </div>
-            <div id="ai-test-result" style="margin-top: 15px; font-size: 0.85em; display: none; padding: 10px; border-radius: 5px;"></div>
         </div>
     </div>
 
     <script>
+        window.pingHistory = {};
+
         async function loadAIStatus() {
+            const pin = document.getElementById('ai-master-pin').value || document.getElementById('master_pin').value;
+            if (!pin) return;
+            
             try {
-                const pin = document.getElementById('ai-master-pin').value || document.getElementById('master_pin').value;
-                if (!pin) {
-                    document.getElementById('ai-status-info').innerHTML = "<i>Wpisz PIN Architekta, aby podejrzeć status API.</i>";
-                    return;
-                }
                 const res = await fetch(`/api/dash/ai_config?master_pin=${encodeURIComponent(pin)}`);
                 const data = await res.json();
-                if (data.error) {
-                    document.getElementById('ai-status-info').innerHTML = `<span style="color:red">Błąd autoryzacji: ${data.error}</span>`;
-                    return;
-                }
+                if (data.error) return;
+                
                 const info = document.getElementById('ai-status-info');
                 document.getElementById('ai-model-name').value = data.AI_MODEL_NAME || "gemini-2.5-flash";
-
                 info.innerHTML = `
-                    <div style="display:flex; justify-content:space-between;">
-                        <span>Model: <b>${data.AI_MODEL_NAME}</b></span>
-                        <span style="color: ${data.STATUS === 'OK' ? '#4caf50' : '#ff5252'}">● ${data.STATUS}</span>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <span>Model: <strong>${data.AI_MODEL_NAME}</strong></span>
+                        <span style="color: ${data.STATUS === 'OK' ? 'var(--success)' : 'var(--danger)'}">● ${data.STATUS}</span>
                     </div>
-                    <div style="margin-top:5px; font-size:0.8em; color:#fff;">
-                        API Key: <span style="font-family:monospace; color:#888;">${data.MASKED_KEY || "BRAK"}</span>
-                    </div>
+                    <div style="color: var(--text-dim); font-size: 0.85em;">API Key: ${data.MASKED_KEY || "BRAK"}</div>
                 `;
-            } catch (e) {
-                console.error("AI Status Error", e);
-            }
+            } catch (e) {}
         }
 
-        async function saveAIConfig() {
-            const model = document.getElementById('ai-model-name').value;
-            const key = document.getElementById('ai-api-key').value;
-            const pin = document.getElementById('ai-master-pin').value || document.getElementById('master_pin').value;
-            if(!pin) return alert("Podaj PIN Architekta!");
-
-            const res = await fetch('/api/dash/ai_config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    master_pin: pin,
-                    AI_MODEL_NAME: model,
-                    GEMINI_API_KEY: key || undefined
-                })
-            });
-            const data = await res.json();
-            if (data.ok) {
-                alert("Konfiguracja AI zapisana globalnie.");
-                loadAIStatus();
-                document.getElementById('ai-api-key').value = '';
-            } else {
-                alert("Błąd: " + data.error);
-            }
-        }
-
-        async function testAI() {
-            const resultBox = document.getElementById('ai-test-result');
-            const pin = document.getElementById('ai-master-pin').value || document.getElementById('master_pin').value;
-            const model = document.getElementById('ai-model-name').value;
-            const token = document.getElementById('ai-api-key').value;
+        async function createTenant() {
+            const name = document.getElementById('tenant_name').value.trim();
+            const pin = document.getElementById('master_pin').value.trim();
+            const token = document.getElementById('tenant_ai_token').value.trim();
+            const err = document.getElementById('error-msg');
             
-            if(!pin) return alert("Podaj PIN Architekta by testować!");
-
-            resultBox.style.display = 'block';
-            resultBox.style.background = '#222';
-            resultBox.style.color = '#aaa';
-            resultBox.innerText = "Trwa testowanie z OVH AI / Google... ⏳";
-
+            if (!name || !pin) return alert("Podaj nazwę i PIN.");
+            
+            err.style.display = 'block';
+            err.style.background = 'rgba(74, 144, 226, 0.1)';
+            err.style.color = var(--primary);
+            err.innerText = "Budowanie kontenerów... Może to zająć do 30s.";
+            
             try {
-                const res = await fetch(`/api/dash/ai_test`, {
+                const res = await fetch('/api/dash/create_tenant', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        master_pin: pin,
-                        model: model || undefined,
-                        token: token || undefined
-                    })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ tenant: name, pin: pin, tenant_token: token || undefined })
                 });
                 const data = await res.json();
-                if (data.error) {
-                    resultBox.style.background = 'rgba(255, 82, 82, 0.1)';
-                    resultBox.style.color = '#ff5252';
-                    resultBox.innerText = "❌ BŁĄD: " + data.error;
+                if (data.success) {
+                    err.style.background = 'rgba(46, 204, 113, 0.1)';
+                    err.style.color = 'var(--success)';
+                    err.innerText = "Sukces! Serwer wystartował.";
+                    document.getElementById('tenant_name').value = '';
+                    setTimeout(loadStatus, 2000);
                 } else {
-                    resultBox.style.background = 'rgba(76, 175, 80, 0.1)';
-                    resultBox.style.color = '#4caf50';
-                    resultBox.innerText = `✅ SUKCES! Odpowiedź Modelu: "${data.response}"`;
+                    err.style.background = 'rgba(255, 77, 77, 0.1)';
+                    err.style.color = 'var(--danger)';
+                    err.innerText = data.error;
                 }
             } catch (e) {
-                resultBox.innerText = "❌ Błąd połączenia z serwerem Orchestratora.";
+                err.innerText = "Błąd połączenia: " + e;
             }
         }
 
-        document.getElementById('ai-master-pin').addEventListener('blur', loadAIStatus);
-
-        window.pingHistory = {}; // Store ping latency history
+        async function deleteTenant(name) {
+            const pin = prompt(`UWAGA: Usunięcie tenanta "${name}" jest nieodwracalne (baza danych zostanie skasowana!).\n\nPodaj PIN Architekta aby potwierdzić:`);
+            if (!pin) return;
+            
+            try {
+                const res = await fetch('/api/dash/delete_tenant', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ tenant: name.split('.')[0], pin: pin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("Pomyślnie usunięto tenanta i zwolniono zasoby.");
+                    loadStatus();
+                } else {
+                    alert("Błąd: " + data.error);
+                }
+            } catch (e) {
+                alert("Błąd sieci.");
+            }
+        }
 
         function loadStatus() {
             fetch('/api/dash/status')
                 .then(res => res.json())
                 .then(data => {
-                    const pingsList = document.getElementById('pings-list');
+                    const list = document.getElementById('pings-list');
                     if (data.error) {
-                        pingsList.innerHTML = `<li><span style="color:red">Błąd połączenia: ${data.error}</span></li>`;
+                        list.innerHTML = `<li style="color:var(--danger)">Błąd: ${data.error}</li>`;
                         return;
                     }
                     
-                    pingsList.innerHTML = '';
-                    if(data.pings.length === 0) {
-                         pingsList.innerHTML = `<li>Brak aktywnych kontenerów APP. Upewnij się, że /var/run/docker.sock działa.</li>`;
+                    list.innerHTML = '';
+                    if(!data.pings || data.pings.length === 0) {
+                        list.innerHTML = `<li>Brak aktywnych tenantów. Dodaj pierwszą restaurację poniżej.</li>`;
+                        return;
                     }
+
                     data.pings.forEach(p => {
-                        const appDot = p.alive ? 'active' : '';
-                        const dbDot = p.db_alive ? 'active' : '';
-                        const appDbDot = p.app_health_db ? 'active' : '';
-                        const customTpl = p.custom_template ? '<span style="color:#28a745">✔ Aktywny </span>' : '<span style="color:#aaa">Domyślny (elvis)</span>';
-                        
-                        // Handle ping history chart
                         if (!window.pingHistory[p.domain]) window.pingHistory[p.domain] = [];
                         window.pingHistory[p.domain].push(p.latency_ms);
-                        if (window.pingHistory[p.domain].length > 20) window.pingHistory[p.domain].shift();
+                        if (window.pingHistory[p.domain].length > 30) window.pingHistory[p.domain].shift();
                         
-                        let chartHTML = '<div style="display:flex; gap:2px; align-items:flex-end; height:20px; background:#111; padding:2px; border-radius:3px;">';
+                        let chartHTML = '<div class="latency-chart">';
                         window.pingHistory[p.domain].forEach(lat => {
-                            let h = 2; let color = '#ff5252';
-                            if (lat > 0) {
-                                h = Math.max(2, Math.min(20, 20 - (lat / 50))); // higher latency = lower bar
-                                color = lat < 200 ? '#4caf50' : (lat < 500 ? '#ffeb3b' : '#ff9800');
-                            }
-                            chartHTML += `<div style="width:4px; height:${h}px; background:${color};" title="${lat}ms"></div>`;
+                            let h = lat > 0 ? Math.max(4, Math.min(24, 24 - (lat / 20))) : 2;
+                            let color = lat < 100 ? 'var(--success)' : (lat < 300 ? '#f1c40f' : 'var(--danger)');
+                            if (lat <= 0) color = 'rgba(255,255,255,0.1)';
+                            chartHTML += `<div class="bar" style="height:${h}px; background:${color}" title="${lat}ms"></div>`;
                         });
                         chartHTML += '</div>';
 
-                        const pingText = p.latency_ms > 0 ? `${p.latency_ms}ms` : "Brak odpowiedzi";
-
-                        pingsList.innerHTML += `
-                        <li>
-                            <div style="font-size: 1.1em; font-weight: bold; width: 100%;">
-                                ${p.domain}
-                                <div style="font-size: 0.7em; font-weight: normal; color:#888; float:right;">
-                                    FTP Folder Szablonu: <code>/opt/elvis/ovh/templates_${p.domain.split('.')[0]}</code>
+                        list.innerHTML += `
+                            <li>
+                                <div class="tenant-header">
+                                    <div class="tenant-info">
+                                        <h3>${p.domain}</h3>
+                                        <div class="tenant-path">App Container: ${p.app_status}</div>
+                                    </div>
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <div class="status-badge">
+                                            <span class="status-dot ${p.alive ? 'active' : ''}"></span>
+                                            ${p.alive ? 'ONLINE' : 'OFFLINE'}
+                                        </div>
+                                        <button class="btn btn-danger" onclick="deleteTenant('${p.domain}')">USUŃ</button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="stat-group" style="margin-top:8px; width: 100%; align-items:center;">
-                                <div class="stat-item" title="Status kontenera"><span class="status-dot ${appDot}"></span> App: <strong>${p.app_status.toUpperCase()}</strong></div>
-                                <div class="stat-item" title="Status kontenera DB"><span class="status-dot ${dbDot}"></span> Baza: <strong>${p.db_size}</strong></div>
-                                <div class="stat-item" title="Status API DB (/health)"><span class="status-dot ${appDbDot}"></span> API DB</div>
-                                <div class="stat-item" style="margin-left:auto;">Motyw: <strong>${customTpl}</strong></div>
-                            </div>
-                            <div class="stat-group" style="margin-top:8px; width: 100%; align-items:center;">
-                                <div class="stat-item">Ping (/health): <strong style="margin-right:10px;">${pingText}</strong> ${chartHTML}</div>
-                            </div>
-                        </li>`;
+                                <div class="stat-grid">
+                                    <div class="stat-card">
+                                        <span class="stat-label">Baza Danych</span>
+                                        <span class="stat-value">${p.db_size}</span>
+                                    </div>
+                                    <div class="stat-card">
+                                        <span class="stat-label">Motyw</span>
+                                        <span class="stat-value">${p.custom_template ? 'Custom' : 'Domyślny'}</span>
+                                    </div>
+                                    <div class="stat-card">
+                                        <span class="stat-label">Latencja</span>
+                                        <span class="stat-value">${p.latency_ms > 0 ? p.latency_ms + 'ms' : '---'}</span>
+                                    </div>
+                                    <div class="stat-card" style="flex-grow: 1; display: flex; align-items: center; justify-content: flex-end;">
+                                        ${chartHTML}
+                                    </div>
+                                </div>
+                            </li>
+                        `;
                     });
                 });
         }
 
-        function createTenant() {
-            const name = document.getElementById('tenant_name').value.trim();
-            const pin = document.getElementById('master_pin').value.trim();
-            const err = document.getElementById('error-msg');
+        // Remaining helpers (testAI, saveAIConfig) omitted for brevity but should be kept
+        async function testAI() {
+            const resBox = document.getElementById('ai-test-result');
+            const pin = document.getElementById('ai-master-pin').value || document.getElementById('master_pin').value;
+            if(!pin) return alert("Podaj PIN!");
             
-            if (!name || !pin) {
-                err.innerText = "Podaj nazwę i PIN.";
-                return;
-            }
-            if (!/^[a-z0-9]+$/.test(name)) {
-                err.innerText = "Nazwa może zawierać tylko małe litery i cyfry bez spacji.";
-                return;
-            }
+            resBox.style.display = 'block';
+            resBox.style.background = 'rgba(255,255,255,0.05)';
+            resBox.innerText = "Testowanie...";
             
-            err.style.color = '#d4af37';
-            err.innerText = "Budowanie infrastruktury i bazy danych. Proszę czekać ok. 15-20 sekund...";
-            const tenantToken = document.getElementById('tenant_ai_token') ? document.getElementById('tenant_ai_token').value : undefined;
-            
-            fetch('/api/dash/create_tenant', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ tenant: name, pin: pin, tenant_token: tenantToken })
-            })
-            .then(res => res.json())
-            .then(data => {
+            try {
+                const res = await fetch('/api/dash/ai_test', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ master_pin: pin })
+                });
+                const data = await res.json();
                 if (data.error) {
-                    err.style.color = '#ff6b6b';
-                    err.innerText = data.error;
+                    resBox.style.color = 'var(--danger)';
+                    resBox.innerText = "Błąd: " + data.error;
                 } else {
-                    err.style.color = '#28a745';
-                    err.innerText = "Sukces! Nowa restauracja została stworzona i dopisana do Caddy.";
-                    document.getElementById('tenant_name').value = '';
-                    setTimeout(loadStatus, 2000);
+                    resBox.style.color = 'var(--success)';
+                    resBox.innerText = "OK: " + data.response;
                 }
-            })
-            .catch(e => {
-                err.style.color = '#ff6b6b';
-                err.innerText = "Błąd sieci: " + e;
-            });
+            } catch (e) { resBox.innerText = "Błąd sieci"; }
         }
 
+        async function saveAIConfig() {
+            const pin = document.getElementById('ai-master-pin').value || document.getElementById('master_pin').value;
+            if(!pin) return alert("Podaj PIN!");
+            const model = document.getElementById('ai-model-name').value;
+            const key = document.getElementById('ai-api-key').value;
+            
+            try {
+                const res = await fetch('/api/dash/ai_config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ master_pin: pin, AI_MODEL_NAME: model, GEMINI_API_KEY: key || undefined })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    alert("Zapisano!");
+                    loadAIStatus();
+                } else alert("Błąd: " + data.error);
+            } catch (e) {}
+        }
+
+        document.getElementById('ai-master-pin').addEventListener('blur', loadAIStatus);
+        setInterval(loadStatus, 10000);
         loadStatus();
         loadAIStatus();
-        setInterval(loadStatus, 15000);
     </script>
 </body>
 </html>
+

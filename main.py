@@ -3117,7 +3117,11 @@ async def create_tenant(payload: TenantRequest):
         with open(compose_path, "r", encoding="utf-8") as f:
             compose_data = yaml.safe_load(f)
             
-        if "services" not in compose_data: compose_data["services"] = {}
+        if "volumes" not in compose_data or compose_data["volumes"] is None: 
+            compose_data["volumes"] = {}
+        
+        db_vol_name = f"{tenant}_db_data"
+        compose_data["volumes"][db_vol_name] = {}
         
         compose_data["services"][f"{tenant}_db"] = {
             "image": "postgres:15-alpine",
@@ -3127,6 +3131,7 @@ async def create_tenant(payload: TenantRequest):
                 "POSTGRES_PASSWORD": _os.environ.get("DATABASE_PASSWORD", "Haslo123!"),
                 "POSTGRES_DB": "saas_db"
             },
+            "volumes": [f"{db_vol_name}:/var/lib/postgresql/data"],
             "networks": ["elvis_net"]
         }
         
@@ -3160,7 +3165,7 @@ async def create_tenant(payload: TenantRequest):
         try:
             print(f"Starting orchestration for {tenant}...")
             # Użyj poprawnego katalogu jeśli w dockrze
-            cmd = f"docker compose -f /app/ovh/docker-compose.yml up -d {tenant}_db {tenant}_app"
+            cmd = f"docker compose -f {compose_path} up -d {tenant}_db {tenant}_app"
             result = subprocess.run(
                 cmd,
                 shell=True,
@@ -3172,7 +3177,7 @@ async def create_tenant(payload: TenantRequest):
                 return JSONResponse({"error": f"Błąd w Docker Compose: {result.stderr}"}, status_code=500)
         except Exception as compose_err:
             print("Compose orchestrator error, but YAML updated:", compose_err)
-            return JSONResponse({"error": f"Błąd komunikacji z docker-compose (sprawdź czy docker.io jest zainstalowane w kontenerze): {str(compose_err)}"}, status_code=500)
+            return JSONResponse({"error": f"Błąd komunikacji z docker-compose: {str(compose_err)}"}, status_code=500)
             
         # 4. Reload Caddy
         try:
@@ -3180,11 +3185,106 @@ async def create_tenant(payload: TenantRequest):
             caddy_c = client.containers.get("elvis_caddy")
             caddy_c.exec_run("caddy reload --config /etc/caddy/Caddyfile")
         except Exception as caddy_err:
-            print("Caddy reload error:", caddy_err)
+            try:
+                # Fallback to other possible name
+                caddy_c = client.containers.get("zjedzit_caddy")
+                caddy_c.exec_run("caddy reload --config /etc/caddy/Caddyfile")
+            except:
+                print("Caddy reload error:", caddy_err)
             
         return {"success": True}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.post("/api/dash/delete_tenant")
+async def delete_tenant(payload: TenantRequest):
+    tenant = payload.tenant.lower().strip()
+    pin = payload.pin
+    
+    import json
+    import os
+    from pathlib import Path
+    cfg_path = Path(__file__).parent / "ai_config.json"
+    master_pin = os.environ.get("MASTER_PIN", "1234")
+    if cfg_path.exists():
+        try:
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                master_pin = json.load(f).get("master_pin", master_pin)
+        except: pass
+        
+    if pin != master_pin: raise HTTPException(401, "Błędny PIN Architekta.")
+    
+    try:
+        import docker
+        import yaml
+        import subprocess
+        
+        # 1. Stop and remove containers and volumes
+        client = docker.from_env()
+        for suffix in ["_app", "_db"]:
+            try:
+                c = client.containers.get(f"{tenant}{suffix}")
+                c.stop()
+                c.remove(v=True) # Remove volumes associated with the container
+            except: pass
+
+        # 2. Edycja pliku Caddyfile
+        caddyfile_path = "ovh/Caddyfile"
+        if not os.path.exists(caddyfile_path):
+            caddyfile_path = "/app/ovh/Caddyfile"
+            
+        if os.path.exists(caddyfile_path):
+            with open(caddyfile_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            
+            # Simple block removal logic
+            import re
+            pattern = re.compile(rf"\n\n{tenant}\.zjedz\.it\s*\{{[^}}]*\s*\}}", re.DOTALL)
+            new_content = pattern.sub("", content)
+            
+            if new_content != content:
+                with open(caddyfile_path, "w", encoding="utf-8") as f:
+                    f.write(new_content)
+
+        # 3. Edycja pliku docker-compose.yml
+        compose_path = "ovh/docker-compose.yml"
+        if not os.path.exists(compose_path):
+            compose_path = "/app/ovh/docker-compose.yml"
+            
+        if os.path.exists(compose_path):
+            with open(compose_path, "r", encoding="utf-8") as f:
+                compose_data = yaml.safe_load(f)
+            
+            if "services" in compose_data:
+                if f"{tenant}_app" in compose_data["services"]:
+                    del compose_data["services"][f"{tenant}_app"]
+                if f"{tenant}_db" in compose_data["services"]:
+                    del compose_data["services"][f"{tenant}_db"]
+            
+            if "volumes" in compose_data and compose_data["volumes"]:
+                vol_name = f"{tenant}_db_data"
+                if vol_name in compose_data["volumes"]:
+                    del compose_data["volumes"][vol_name]
+            
+            with open(compose_path, "w", encoding="utf-8") as f:
+                yaml.dump(compose_data, f, default_flow_style=False, sort_keys=False)
+
+        # 4. Reload Caddy
+        try:
+            caddy_c = None
+            try:
+                caddy_c = client.containers.get("elvis_caddy")
+            except:
+                caddy_c = client.containers.get("zjedzit_caddy")
+            
+            if caddy_c:
+                caddy_c.exec_run("caddy reload --config /etc/caddy/Caddyfile")
+        except: pass
+            
+        return {"success": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 
 @app.get("/dash", response_class=HTMLResponse)
 async def dash_page(request: Request):
