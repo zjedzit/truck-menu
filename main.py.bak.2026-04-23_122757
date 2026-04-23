@@ -657,6 +657,8 @@ async def register_marketing_consent(request: MarketingConsentRequest):
         return {"success": False, "error": str(e)}
     finally:
         db.close()
+from tenancy import setup_tenancy
+Tenant = setup_tenancy(app, SessionLocal, Base)
 
 @auth_router.post("/google_login")
 async def google_login_placeholder(token: str):
@@ -868,10 +870,6 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://marcin:Haslo123!@loc
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-
-from tenancy import setup_tenancy
-Tenant = setup_tenancy(app, SessionLocal, Base)
-
 
 # Models
 class Client(Base):

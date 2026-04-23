@@ -16,3 +16,5 @@ tmp_*
 # IDE / AI
 .claude/
 .agents/
+core
+core

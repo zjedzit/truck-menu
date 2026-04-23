@@ -1,26 +1,61 @@
 {
-    # Optional: Email for Let's Encrypt notifications
-    # email your-email@example.com
+  # On-demand TLS: Caddy pyta aplikację czy wolno wydać cert.
+  # Caddy sam robi GET: /api/dash/allow?domain=<hostname>  [1](https://deepwiki.com/lucaslorentz/caddy-docker-proxy/3.1-docker-labels)[2](https://ovh.github.io/manager/)
+  on_demand_tls {
+    ask http://app:8080/api/dash/allow
+  }
+
+  # (opcjonalnie) email do ACME/Let's Encrypt
+  # email you@example.com
 }
 
+# Landing
 zjedz.it, www.zjedz.it {
-    root * /var/www/html
-    file_server
+  root * /var/www/html
+  file_server
 }
 
-elvis.zjedz.it {
-    reverse_proxy elvis_app:8080
+# HTTPS dla wszystkich hostów
+:443 {
+  tls {
+    on_demand
+  }
+
+  # DASH: wymuś / -> /dash
+  @dash host dash.zjedz.it
+  handle @dash {
+    @root path /
+    redir @root /dash 302
+    reverse_proxy app:8080
+  }
+
+  # Wszystkie inne hosty (tenants): idą do aplikacji (multi-tenant po Host)
+  handle {
+    reverse_proxy app:8080
+  }
 }
 
-bar.zjedz.it {
-    reverse_proxy bar_app:8080
-}
-
-dash.zjedz.it {
-    reverse_proxy dash_app:8080
-}
-
-# Fallback for IP access or undefined subdomains
+# HTTP -> HTTPS
 :80 {
-    reverse_proxy elvis_app:8080
+  redir https://{host}{uri} permanent
+}
+
+
+start.zjedz.it {
+    reverse_proxy start_app:8080
+}
+
+
+poiu.zjedz.it {
+    reverse_proxy poiu_app:8080
+}
+
+
+stary.zjedz.it {
+    reverse_proxy stary_app:8080
+}
+
+
+nowy.zjedz.it {
+    reverse_proxy nowy_app:8080
 }

@@ -872,7 +872,6 @@ Base = declarative_base()
 from tenancy import setup_tenancy
 Tenant = setup_tenancy(app, SessionLocal, Base)
 
-
 # Models
 class Client(Base):
     __tablename__ = "clients"

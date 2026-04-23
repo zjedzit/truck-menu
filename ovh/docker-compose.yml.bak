@@ -1,0 +1,88 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: zjedzit_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_SUPERUSER}
+      POSTGRES_PASSWORD: ${PG_SUPERPASS}
+      POSTGRES_DB: ${PG_DB}
+    volumes:
+    - pg_data:/var/lib/postgresql/data
+    networks:
+    - zjedzit_net
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U ${PG_SUPERUSER} -d ${PG_DB}
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  app:
+    build:
+      context: ../elvis
+      dockerfile: Dockerfile
+    container_name: zjedzit_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+    - DATABASE_URL=postgresql://${PG_APPUSER}:${PG_APPPASS}@postgres:5432/${PG_DB}
+    - SYSTEM_MODE=${SYSTEM_MODE}
+    - BRAND=${BRAND}
+    - DASH_ADMIN_TOKEN=${DASH_ADMIN_TOKEN}
+    - DOMAIN_ROOT=${DOMAIN_ROOT}
+    volumes:
+    - ../elvis:/app:cached
+    networks:
+    - zjedzit_net
+  caddy:
+    image: caddy:latest
+    container_name: zjedzit_caddy
+    restart: unless-stopped
+    ports:
+    - 80:80
+    - 443:443
+    volumes:
+    - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    - ./index.html:/var/www/html/index.html:ro
+    - caddy_data:/data
+    - caddy_config:/config
+    networks:
+    - zjedzit_net
+  123_db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: marcin
+      POSTGRES_PASSWORD: Haslo123!
+      POSTGRES_DB: saas_db
+    networks:
+    - elvis_net
+    container_name: 123_db
+  123_app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: ovh-app
+    container_name: 123_app
+    restart: always
+    environment:
+    - DATABASE_URL=postgresql://marcin:Haslo123!@123_db:5432/saas_db
+    - BRAND=123
+    depends_on:
+    - 123_db
+    volumes:
+    - /opt/elvis:/app:cached
+    - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+    - elvis_net
+networks:
+  zjedzit_net:
+    driver: bridge
+volumes:
+  pg_data: null
+  caddy_data: null
+  caddy_config: null
+
