@@ -1,3 +1,4 @@
+# Elvis Orchestrator - Stable v2.1 (UTF-8) - 2026-04-23 18:20
 import os, requests, json, uuid
 from openai import OpenAI
 from fastapi import FastAPI, Request, File, UploadFile, Form, Cookie, Response, WebSocket, WebSocketDisconnect

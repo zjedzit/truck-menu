@@ -1,3 +1,4 @@
+# Tenancy Logic - Stable v2.1 (UTF-8) - 2026-04-23 18:20
 import os, uuid, json
 from datetime import datetime
 from fastapi import APIRouter, Request, Depends, HTTPException
