@@ -20,6 +20,11 @@ from sqlalchemy import create_engine, Column, String, Integer, Float, Boolean, D
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
+class TenantRequest(BaseModel):
+    slug: str
+    name: Optional[str] = None
+
+
 
 from contextvars import ContextVar
 
