@@ -21,8 +21,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
 class TenantRequest(BaseModel):
-    slug: str
-    name: Optional[str] = None
+    tenant: str
+    pin: str
+    tenant_token: Optional[str] = None
 
 
 
@@ -2994,7 +2995,7 @@ async def get_dash_status():
     status = {"db_alive": True, "db_size": "---", "pings": []}
     try:
         db = SessionLocal()
-        tenants = db.query(Tenant).order_by(Tenant.created_at.desc()).all()
+        tenants = db.query(Tenant).filter(Tenant.status != "deleted").order_by(Tenant.created_at.desc()).all()
         db.close()
         
         found = []
@@ -3085,12 +3086,13 @@ async def create_tenant(payload: TenantRequest):
         db.add(new_tenant)
         
         # 3. Add to Restaurant info table (unified)
-        new_rest = Restaurant(
-            id=tenant_slug,
-            name=tenant_slug.capitalize(),
-            mode="restaurant"
-        )
-        db.add(new_rest)
+        conn = get_db()
+        if conn:
+            conn["restaurants"].update_one(
+                {"_id": tenant_slug},
+                {"$set": {"name": tenant_slug.capitalize(), "mode": "restaurant"}},
+                upsert=True
+            )
         
         db.commit()
         db.close()
