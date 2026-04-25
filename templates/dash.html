@@ -575,8 +575,15 @@
                             </li>
                         `;
                     });
+                })
+                .catch(err => {
+                    logDebug(`BŁĄD POŁĄCZENIA: ${err.message}`, '#f00');
                 });
+            } catch (e) {
+                console.error("loadStatus error:", e);
+            }
         }
+
 
         // Remaining helpers (testAI, saveAIConfig) omitted for brevity but should be kept
         async function testAI() {
