@@ -895,7 +895,7 @@ class Staff(Base):
     nfc_id = Column(String, unique=True, index=True)
     is_active = Column(Boolean, default=False)
     role = Column(String) # 'waiter', 'chef', 'admin'
-    tenant_id = Column(String, index=True, nullable=False)
+    tenant_id = Column(String, primary_key=True, index=True, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 class StaffActivity(Base):
@@ -969,7 +969,7 @@ class MenuItem(Base):
     to_kitchen = Column(Boolean, default=True) # Wysyłaj na KDS
     no_rating = Column(Boolean, default=False) # Ukryj gwiazdki oceniania
     sort_order = Column(Integer, default=10) # Kolejność sortowania
-    tenant_id = Column(String, index=True, nullable=False)
+    tenant_id = Column(String, primary_key=True, index=True, nullable=False)
 
 class POSHistory(Base):
     __tablename__ = "pos_history"
@@ -979,7 +979,7 @@ class POSHistory(Base):
     total = Column(Float)
     status = Column(String)
     printed = Column(Boolean, default=False)
-    tenant_id = Column(String, index=True, nullable=False)
+    tenant_id = Column(String, primary_key=True, index=True, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 class Restaurant(Base):
@@ -1171,6 +1171,12 @@ class CollectionWrapper:
             
             if model:
                 q = self.session.query(model)
+                
+                # Multi-tenant filter
+                current_tenant = tenant_context.get()
+                if current_tenant and current_tenant != "system" and hasattr(model, "tenant_id"):
+                    q = q.filter(model.tenant_id == current_tenant)
+
                 # Obsługa filtrów (np. _id, table_number, paid)
                 for k, v in query.items():
                     if k == "_id":
@@ -1186,6 +1192,7 @@ class CollectionWrapper:
         except Exception as e:
             logger.error(f"Error in delete_many({self.name}): {e}")
             self.session.rollback()
+            raise e
 
     def delete_one(self, query):
         """Emulacja delete_one"""
@@ -1213,36 +1220,47 @@ class CollectionWrapper:
                 return None
 
             item = None
+            current_tenant = tenant_context.get()
+            
+            # Base query preparation
+            q = None
             if self.name == "staff":
                 name = query.get("name") or item_id
-                item = self.session.query(Staff).filter(Staff.id == name).first()
+                q = self.session.query(Staff).filter(Staff.id == name)
             elif self.name == "orders":
-                item = self.session.query(Order).filter(Order.id == item_id).first()
+                q = self.session.query(Order).filter(Order.id == item_id)
+            elif self.name == "menu":
+                q = self.session.query(MenuItem).filter(MenuItem.id == item_id)
+            elif self.name == "restaurants":
+                q = self.session.query(Restaurant).filter(Restaurant.id == item_id)
+            elif self.name == "pos_history":
+                q = self.session.query(POSHistory).filter(POSHistory.id == item_id)
             elif self.name == "clients":
                 email = query.get("email")
-                item = self.session.query(Client).filter(Client.email == email).first()
-            elif self.name == "menu":
-                item = self.session.query(MenuItem).filter(MenuItem.id == item_id).first()
-            elif self.name == "pos_history":
-                item = self.session.query(POSHistory).filter(POSHistory.id == item_id).first()
-            elif self.name == "restaurants":
-                item = self.session.query(Restaurant).filter(Restaurant.id == item_id).first()
+                q = self.session.query(Client).filter(Client.email == email)
             elif self.name == "config":
                 item = self.session.query(AppConfig).filter(AppConfig.id == item_id).first()
                 if item:
                     d = item.data.copy() if item.data else {}
                     d["_id"] = item.id
                     return d
+            
+            if q:
+                # Multi-tenant filter
+                if current_tenant and current_tenant != "system" and hasattr(q.column_descriptions[0]['entity'], "tenant_id"):
+                    q = q.filter(q.column_descriptions[0]['entity'].tenant_id == current_tenant)
+                item = q.first()
 
             if item:
                 d = {k: v for k, v in item.__dict__.items() if not k.startswith('_')}
                 d["_id"] = d.pop("id", None)
-                if getattr(item, "options", None) and isinstance(item.options, dict):
+                if hasattr(item, "options") and isinstance(item.options, dict):
                     d.update(item.options)
                 return d
+            return None
         except Exception as e:
-            logger.error(f"Error in find_one: {e}")
-        return None
+            logger.error(f"Error in find_one({self.name}): {e}")
+            raise e
 
     def update_one(self, query, update_data, upsert=False):
         from sqlalchemy.orm.attributes import flag_modified
@@ -1269,12 +1287,23 @@ class CollectionWrapper:
                 return
 
             item = None
+            current_tenant = tenant_context.get()
+            
             if self.name == "menu":
-                item = self.session.query(MenuItem).filter(MenuItem.id == doc_id).first()
+                q = self.session.query(MenuItem).filter(MenuItem.id == doc_id)
+                if current_tenant and current_tenant != "system":
+                    q = q.filter(MenuItem.tenant_id == current_tenant)
+                item = q.first()
             elif self.name == "staff":
-                item = self.session.query(Staff).filter(Staff.id == doc_id).first()
+                q = self.session.query(Staff).filter(Staff.id == doc_id)
+                if current_tenant and current_tenant != "system":
+                    q = q.filter(Staff.tenant_id == current_tenant)
+                item = q.first()
             elif self.name == "orders":
-                item = self.session.query(Order).filter(Order.id == doc_id).first()
+                q = self.session.query(Order).filter(Order.id == doc_id)
+                if current_tenant and current_tenant != "system":
+                    q = q.filter(Order.tenant_id == current_tenant)
+                item = q.first()
             elif self.name == "restaurants":
                 item = self.session.query(Restaurant).filter(Restaurant.id == doc_id).first()
 
@@ -1322,8 +1351,9 @@ class CollectionWrapper:
                     self.session.add(new_item)
                     self.session.commit()
         except Exception as e:
-            logger.error(f"Error in update_one: {e}")
+            logger.error(f"Error in update_one({self.name}): {e}")
             self.session.rollback()
+            raise e
 
     def replace_one(self, query, replacement, upsert=False):
         # Emulacja replace_one (używana głównie przy init_db reset)
@@ -1389,6 +1419,7 @@ class CollectionWrapper:
         except Exception as e:
             logger.error(f"Error in insert_one({self.name}): {e}")
             self.session.rollback()
+            raise e
 
 def get_db():
     """Get database session (Postgres) wrapped in Mongo compatibility layer"""
@@ -1930,6 +1961,35 @@ async def save_layout(request: Request):
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 
 # --- AUTHENTICATION & ROLES ---
+
+@app.post("/api/admin/set_mode")
+async def set_mode(request: Request):
+    """Zmiana trybu pracy restauracji (Restaurant / Foodtruck)"""
+    try:
+        data = await request.json()
+        new_mode = data.get("mode")
+        auth_role = data.get("auth_role")
+        
+        if not check_role_access("admin", auth_role):
+            return JSONResponse({"ok": False, "error": "Brak uprawnień admina."}, status_code=403)
+            
+        current_tenant = tenant_context.get()
+        if not current_tenant or current_tenant == "system":
+            return JSONResponse({"ok": False, "error": "Nie można zmienić trybu dla systemu globalnego."}, status_code=400)
+            
+        conn = get_db()
+        if conn:
+            conn["restaurants"].update_one(
+                {"_id": current_tenant},
+                {"$set": {"mode": new_mode}},
+                upsert=True
+            )
+            await manager.broadcast(json.dumps({"type": "update"}))
+            return {"ok": True}
+        return JSONResponse({"ok": False, "error": "Baza danych niedostępna"}, status_code=500)
+    except Exception as e:
+        logger.error(f"Error in set_mode: {e}")
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 @app.post("/api/admin/set_role")
 async def set_role(request: Request):
