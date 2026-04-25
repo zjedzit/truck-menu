@@ -1314,6 +1314,11 @@ class CollectionWrapper:
                             setattr(new_item, k, v)
                 
                 if new_item:
+                    # Inject tenant_id on upsert
+                    current_tenant = tenant_context.get()
+                    if current_tenant and current_tenant != "system" and hasattr(new_item, "tenant_id"):
+                        new_item.tenant_id = current_tenant
+                    
                     self.session.add(new_item)
                     self.session.commit()
         except Exception as e:

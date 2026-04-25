@@ -3,8 +3,8 @@ set -euo pipefail
 
 # === USTAWIENIA DOMYŚLNE ===
 BASE_DIR="/opt/zjedzit/ovh"
-CODE_DIR="/home/debian/truck-menu"          # tu MUSI być main.py + tenancy.py (bind-mount -> /app)
-MAIN_ENV="/home/debian/truck-menu/ovh/.env" # główny env, skąd weźmiemy hasła/tokeny
+CODE_DIR="/opt/zjedzit"
+MAIN_ENV="/opt/zjedzit/ovh/.env"
 DOMAIN_ROOT_DEFAULT="zjedz.it"
 
 usage() {
