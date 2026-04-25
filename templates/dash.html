@@ -451,7 +451,7 @@
             }
         }
 
-        async function deleteTenant(name) {
+        async function deleteTenant(name, event) {
             const btn = event.target;
             const originalText = btn.innerText;
 
@@ -565,7 +565,7 @@
                                             <span class="status-dot ${p.alive ? 'active' : ''}"></span>
                                             ${p.alive ? 'ONLINE' : 'OFFLINE'}
                                         </div>
-                                        <button class="btn btn-danger" onclick="deleteTenant('${p.domain}')">USUŃ</button>
+                                        <button class="btn btn-danger" onclick="deleteTenant('${p.domain}', event)">USUŃ</button>
                                     </div>
                                 </div>
                                 <div class="stat-grid">

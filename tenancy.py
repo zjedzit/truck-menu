@@ -31,9 +31,10 @@ def setup_tenancy(app, SessionLocal, Base):
         id = Column(String, primary_key=True)
         slug = Column(String, unique=True, index=True)
         name = Column(String)
-        status = Column(String, default="active") # active, disabled
+        status = Column(String, default="active") # active, disabled, deleted
         created_at = Column(DateTime, default=datetime.utcnow)
         disabled_at = Column(DateTime, nullable=True)
+        deleted_at = Column(DateTime, nullable=True)
 
     # Helper function to get domain root
     def _domain_root():
