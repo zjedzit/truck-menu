@@ -283,13 +283,14 @@
             </div>
         </div>
 
-        <div class="card" style="margin-bottom: 30px; border-left: 4px solid var(--primary); background: linear-gradient(90deg, rgba(74,144,226,0.1) 0%, transparent 100%);">
+        <div class="card"
+            style="margin-bottom: 30px; border-left: 4px solid var(--primary); background: linear-gradient(90deg, rgba(74,144,226,0.1) 0%, transparent 100%);">
             <h3 style="margin-bottom: 10px; color: var(--primary);">O Systemie</h3>
             <p style="font-size: 0.95em; color: rgba(255,255,255,0.7); line-height: 1.6;">
-                Witaj w centrum dowodzenia <strong>Elvis POS Multi-Tenant</strong>. 
-                Ten panel pozwala na pełne zarządzanie infrastrukturą serwerową Twojej sieci gastronomicznej. 
-                Możesz tu błyskawicznie stawiać nowe środowiska (Tenanty), monitorować ich stan techniczny (Health-Check), 
-                sprawdzać zajętość bazy danych oraz zarządzać cyklem życia subdomen.
+                Witaj w centrum dowodzenia <strong>Zjedz.it Unified Cloud</strong>.
+                Ten panel pozwala na błyskawiczne zarządzanie siecią Twoich lokali gastronomicznych.
+                Dzięki architekturze <strong>Shared-Instance</strong>, dodawanie nowej restauracji jest natychmiastowe
+                i nie zużywa dodatkowej pamięci RAM Twojego serwera VPS.
             </p>
         </div>
 
@@ -319,7 +320,7 @@
                 </div>
             </div>
             <ul id="pings-list">
-                <li class="loading">Ładowanie listy...</li>
+                <li class="loading">Ładowanie bazy restauracji...</li>
             </ul>
         </div>
 
@@ -327,7 +328,7 @@
             <div class="card">
                 <h2><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 5v14M5 12h14"></path>
-                    </svg> Nowy Tenant</h2>
+                    </svg> Dodaj Restaurację</h2>
                 <div class="form-group">
                     <label>Nazwa subdomeny</label>
                     <input type="text" id="tenant_name" placeholder="np. kawiarnia" autocomplete="off">
@@ -340,7 +341,7 @@
                     <label>Opcjonalny Token AI</label>
                     <input type="password" id="tenant_ai_token" placeholder="Domyślny jeśli puste">
                 </div>
-                <button class="btn" style="width: 100%;" onclick="createTenant()">POSTAW SERWER</button>
+                <button class="btn" style="width: 100%;" onclick="createTenant()">DODAJ RESTAURACJĘ</button>
                 <div id="error-msg"></div>
             </div>
 
@@ -407,6 +408,13 @@
                 `;
             } catch (e) { }
         }
+        window.onerror = function (msg, url, line) {
+            const debugConsole = document.getElementById('debug-console');
+            if (debugConsole) {
+                debugConsole.innerHTML += `<div style="color:#f00">[JS ERROR] ${msg} (line ${line})</div>`;
+            }
+            return false;
+        };
 
         async function createTenant() {
             const name = document.getElementById('tenant_name').value.trim();
@@ -419,7 +427,7 @@
             err.style.display = 'block';
             err.style.background = 'rgba(74, 144, 226, 0.1)';
             err.style.color = 'var(--primary)';
-            err.innerText = "Budowanie kontenerów... Może to zająć do 30s.";
+            err.innerText = "Rejestracja w bazie danych...";
 
             try {
                 const res = await fetch('/api/dash/create_tenant', {
@@ -431,7 +439,7 @@
                 if (data.success) {
                     err.style.background = 'rgba(46, 204, 113, 0.1)';
                     err.style.color = 'var(--success)';
-                    err.innerText = "Sukces! Serwer wystartował.";
+                    err.innerText = "Sukces! Restauracja dodana.";
                     document.getElementById('tenant_name').value = '';
                     setTimeout(loadStatus, 2000);
                 } else {
@@ -448,7 +456,7 @@
             const btn = event.target;
             const originalText = btn.innerText;
 
-            const pin = prompt(`UWAGA: Usunięcie tenanta "${name}" jest nieodwracalne (baza danych zostanie skasowana!).\n\nPodaj PIN Architekta aby potwierdzić:`);
+            const pin = prompt(`UWAGA: Usunięcie tenanta "${name}" jest nieodwracalne!\n\nPodaj PIN Architekta aby potwierdzić:`);
             if (!pin) return;
 
             btn.innerText = "USUWANIE...";
@@ -462,7 +470,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert("Pomyślnie usunięto tenanta i zwolniono zasoby.");
+                    alert("Pomyślnie usunięto restaurację.");
                     loadStatus();
                 } else {
                     alert("Błąd: " + data.error);
@@ -479,53 +487,36 @@
         function loadStatus() {
             const list = document.getElementById('pings-list');
             const debugConsole = document.getElementById('debug-console');
-            
-            function logDebug(msg, color='#aaa') {
+
+            function logDebug(msg, color = '#aaa') {
                 if (!debugConsole) return;
                 const now = new Date().toLocaleTimeString();
                 debugConsole.innerHTML += `<div style="color:${color}">[${now}] ${msg}</div>`;
                 debugConsole.scrollTop = debugConsole.scrollHeight;
             }
 
-            logDebug("Rozpoczynam pobieranie statusu...");
-            
-            fetch('/api/dash/status')
-                .then(res => {
-                    logDebug(`Odpowiedź HTTP: ${res.status} ${res.statusText}`, res.ok ? '#0f0' : '#f00');
-                    return res.json();
-                })
-                .then(data => {
-                    // Update Widgets
-                    const dockerWidget = document.getElementById('status-docker');
-                    const dbWidget = document.getElementById('status-db');
-                    const countWidget = document.getElementById('status-count');
-                    const dbCountWidget = document.getElementById('status-db-count');
+            try {
+                logDebug("Inicjalizacja pobierania statusu...");
 
-                    if (dockerWidget) {
-                        dockerWidget.querySelector('.stat-value').innerText = data.error && data.error.includes("Docker") ? "BŁĄD" : "OK";
-                        dockerWidget.querySelector('.stat-value').style.color = data.error && data.error.includes("Docker") ? "var(--danger)" : "var(--success)";
-                    }
-                    if (dbWidget) {
-                        dbWidget.querySelector('.stat-value').innerText = data.db_alive ? "OK" : "BŁĄD";
-                        dbWidget.querySelector('.stat-value').style.color = data.db_alive ? "var(--success)" : "var(--danger)";
-                    }
-                    if (countWidget) {
-                        countWidget.querySelector('.stat-value').innerText = data.pings ? data.pings.length : 0;
-                    }
-                    if (dbCountWidget) {
-                        dbCountWidget.querySelector('.stat-value').innerText = data.db_instances || 0;
-                    }
+                fetch('/api/dash/status')
+                    .then(res => {
+                        logDebug(`Odpowiedź HTTP: ${res.status} ${res.statusText}`, res.ok ? '#0f0' : '#f00');
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.json();
+                    })
+                    .then(data => {
+                        logDebug(`Otrzymano dane JSON. Liczba lokali: ${data.pings ? data.pings.length : 0}`);
+                        if (data.error) {
+                            logDebug(`BŁĄD SERWERA: ${data.error}`, '#f00');
+                            list.innerHTML = `<li style="color:var(--danger)">Błąd: ${data.error}</li>`;
+                            return;
+                        }
 
-                    logDebug(`Otrzymano dane. Liczba tenantów: ${data.pings ? data.pings.length : 0}`);
-                    if (data.error) {
-                        logDebug(`BŁĄD SERWERA: ${data.error}`, '#f00');
-                        list.innerHTML = `<li style="color:var(--danger)">Błąd: ${data.error}</li>`;
-                        return;
-                    }
 
                     list.innerHTML = '';
                     if (!data.pings || data.pings.length === 0) {
                         list.innerHTML = `<li>Brak aktywnych tenantów. Dodaj pierwszą restaurację poniżej.</li>`;
+                        logDebug("Lista tenantów pusta.");
                         return;
                     }
 
@@ -548,7 +539,7 @@
                                 <div class="tenant-header">
                                     <div class="tenant-info">
                                         <h3>${p.domain}</h3>
-                                        <div class="tenant-path">KONTENER: ${p.app_status.toUpperCase()}</div>
+                                        <div class="tenant-path">TRYB: Shared Cloud Instance</div>
                                     </div>
                                     <div style="display: flex; gap: 10px; align-items: center;">
                                         <div class="status-badge">
@@ -635,12 +626,12 @@
         }
 
         document.getElementById('ai-master-pin').addEventListener('blur', loadAIStatus);
-        
+
         // Inicjalizacja konsoli
         const debugConsole = document.getElementById('debug-console');
         if (debugConsole) debugConsole.innerHTML = '<div style="color:#0f0">[SYSTEM] Dashboard UI Initialized.</div>';
 
-        setInterval(loadStatus, 20000); 
+        setInterval(loadStatus, 20000);
         loadStatus();
         loadAIStatus();
     </script>

@@ -2,7 +2,7 @@
 
 To jest gotowe środowisko wdrożeniowe dla serwerów VPS opartych na Debian 12 (oraz Ubuntu 24.04) z bazą MongoDB. Zawiera krok po kroku instalację, konfigurację `nginx` oraz pomocniczych kontenerów dla Dockera.
 
-> Uwaga: Całe główne repozytorium aplikacji powinno być sklonowane do katalogu `/opt/elvis` na VPS (wymagane ponieważ docker-compose wychodzi kontekstem wyżej).
+> Uwaga: Całe główne repozytorium aplikacji powinno być sklonowane do katalogu `/opt/zjedzit` na VPS (wymagane ponieważ docker-compose wychodzi kontekstem wyżej).
 
 ## 1. Wymagania
 - Serwer VPS: Debian 12 (lub Ubuntu Linux x86_64)
@@ -25,16 +25,16 @@ newgrp docker
 Przykład:
 
 ```bash
-sudo mkdir -p /opt/elvis
-sudo chown $USER:$USER /opt/elvis
-cd /opt/elvis
+sudo mkdir -p /opt/zjedzit
+sudo chown $USER:$USER /opt/zjedzit
+cd /opt/zjedzit
 git clone https://github.com/zjedzit/truck-menu.git .
 ```
 
 Jeżeli repozytorium już jest na serwerze, po prostu przejdź do katalogu:
 
 ```bash
-cd /opt/elvis
+cd /opt/zjedzit
 ```
 
 ## 4. Krok 3: konfiguracja środowiska
@@ -42,7 +42,7 @@ cd /opt/elvis
 Skopiuj plik `.env.example` i dostosuj zmienne:
 
 ```bash
-cd /opt/elvis/ovh
+cd /opt/zjedzit/ovh
 cp .env.example .env
 ```
 
@@ -62,7 +62,7 @@ Docker Compose uruchomi trzy kontenery:
 - **nginx** — reverse proxy (porty 80 i 443)
 
 ```bash
-cd /opt/elvis/ovh
+cd /opt/zjedzit/ovh
 docker compose up -d --build
 ```
 
@@ -162,10 +162,10 @@ Jeśli obsługujesz kilkunastu klientów, każdy może mieć swoją instancję:
 **Opcja 1: Oddzielne docker-compose dla każdego klienta**
 
 ```bash
-mkdir -p /opt/elvis_klient1
-cd /opt/elvis_klient1
+mkdir -p /opt/zjedzit_klient1
+cd /opt/zjedzit_klient1
 # Sklonuj repozytorium lub skopiuj strukturę
-docker compose -f /opt/elvis/ovh/docker-compose.yml up -d \
+docker compose -f /opt/zjedzit/ovh/docker-compose.yml up -d \
   -e MONGO_URI=mongodb://mongo1:27017
 ```
 
