@@ -1,4 +1,4 @@
-# Elvis Docker Infrastructure - Stable v2.1 (UTF-8)
+# Zjedz.it Docker Infrastructure - Stable v2.1 (UTF-8)
 services:
   postgres:
     image: postgres:15-alpine
@@ -11,7 +11,7 @@ services:
     volumes:
     - ovh_pg_data:/var/lib/postgresql/data
     networks:
-    - elvis_net
+    - zjedzit_net
     healthcheck:
       test:
       - CMD-SHELL
@@ -39,7 +39,7 @@ services:
     - ..:/app:cached
     - /var/run/docker.sock:/var/run/docker.sock
     networks:
-    - elvis_net
+    - zjedzit_net
   caddy:
     image: caddy:latest
     container_name: zjedzit_caddy
@@ -47,17 +47,15 @@ services:
     ports:
     - 80:80
     - 443:443
-    networks:
-    - elvis_net
     volumes:
     - ./Caddyfile:/etc/caddy/Caddyfile:ro
     - ./index.html:/var/www/html/index.html:ro
     - caddy_data:/data
     - caddy_config:/config
     networks:
-    - elvis_net
+    - zjedzit_net
 networks:
-  elvis_net:
+  zjedzit_net:
     driver: bridge
 volumes:
   ovh_pg_data: null
