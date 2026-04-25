@@ -55,6 +55,10 @@ async def startup_event():
             conn.session.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS price FLOAT"))
             conn.session.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS note VARCHAR"))
             conn.session.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS to_kitchen BOOLEAN DEFAULT TRUE"))
+
+            # Migrations for Tenants (status, deleted_at)
+            conn.session.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS status VARCHAR DEFAULT 'active'"))
+            conn.session.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP"))
             
             conn.session.commit()
             logger.info("Database migration: all columns checked and updated.")
