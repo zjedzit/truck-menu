@@ -566,6 +566,19 @@
                 <button class="btn-save" onclick="grantAccess()">NADAJ DOSTĘP</button>
             </div>
             <div class="form-container">
+                <h3 style="margin-top:0; color:var(--gold);">TRYB PRACY</h3>
+                <div style="display:flex; align-items:center; gap:20px; background:#222; padding:15px; border-radius:10px;">
+                    <div style="flex:1;">
+                        <b id="current-mode-text" style="color:var(--gold);">{{ system_mode|upper }}</b>
+                        <div style="font-size:0.8em; color:#888;">Tryb Food Truck wyłącza mapę sali i włącza numery odbioru.</div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-save" style="padding:8px 15px; background:{% if system_mode == 'restaurant' %}var(--gold){% else %}#444{% endif %}" onclick="changeMode('restaurant')">RESTAURACJA</button>
+                        <button class="btn-save" style="padding:8px 15px; background:{% if system_mode == 'foodtruck' %}var(--gold){% else %}#444{% endif %}" onclick="changeMode('foodtruck')">FOOD TRUCK</button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-container">
                 <h3 style="margin-top:0; color:var(--gold);">Aktualne Dostępy</h3>
                 <table class="pos-table">
                     <thead>
@@ -1222,6 +1235,24 @@
                     </tr>
                 `).join('') : "<tr><td colspan='3' style='text-align:center; color:#666;'>Brak nadanych dostępów.</td></tr>";
                 } catch (e) { console.error(e); }
+            }
+
+            async function changeMode(mode) {
+                const role = localStorage.getItem('auth_role');
+                try {
+                    const res = await fetch('/api/admin/set_mode', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ mode, auth_role: role })
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                        showToast("Tryb pracy zmieniony. Odświeżam...");
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showToast("Błąd: " + data.error);
+                    }
+                } catch (e) { showToast("Błąd połączenia."); }
             }
 
             async function grantAccess() {
