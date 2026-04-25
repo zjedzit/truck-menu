@@ -6,6 +6,25 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import Column, String, DateTime, Boolean
 from pathlib import Path
 
+def extract_tenant_slug(hostname: str) -> str:
+    """Extracts tenant slug from hostname (e.g., burger.zjedz.it -> burger)"""
+    if not hostname:
+        return "system"
+    
+    # Remove port if present
+    host = hostname.split(':')[0]
+    parts = host.split('.')
+    
+    # If we have slug.domain.tld or slug.local
+    if len(parts) >= 2:
+        slug = parts[0].lower()
+        if slug in ["www", "api"]: # common prefixes to ignore if needed
+             return "system"
+        return slug
+    
+    return "system"
+
+
 def setup_tenancy(app, SessionLocal, Base):
     class Tenant(Base):
         __tablename__ = "tenants"
