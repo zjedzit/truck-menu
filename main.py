@@ -2492,6 +2492,7 @@ async def add_order(order: dict):
                 "note": order.get("note", ""),
                 "to_kitchen": order.get("to_kitchen", True)
             }
+            conn.execute(text("UPDATE qr_tokens SET is_used = TRUE WHERE token = :t"), {"t": table_num})
             conn["orders"].insert_one(order_data)
             
         await manager.broadcast(json.dumps({"type": "update"}))
@@ -2973,6 +2974,18 @@ async def zamowienie_entry(request: Request, burger_session: Optional[str] = Coo
     
     return response
 
+@app.get("/api/admin/create_qr")
+async def create_qr_token():
+    import random, string
+    token = ''.join(random.choices(string.ascii_lowercase + string.digits, k=15))
+    with get_db() as db:
+        # Inicjalizacja tabeli jeśli nie istnieje
+        db.execute(text("CREATE TABLE IF NOT EXISTS qr_tokens (token VARCHAR PRIMARY KEY, is_used BOOLEAN DEFAULT FALSE, created_at TIMESTAMP, tenant_id VARCHAR)"))
+        db.execute(text("INSERT INTO qr_tokens (token, is_used, created_at, tenant_id) VALUES (:t, FALSE, :c, :tid)"), 
+                   {"t": token, "c": datetime.utcnow(), "tid": tenant_context.get()})
+        db.commit()
+    return {"ok": True, "token": token, "url": f"/?q={token}"}
+
 @app.get("/", response_class=HTMLResponse)
 async def index_page(request: Request, table: Optional[str] = None, q: Optional[str] = None, burger_session: Optional[str] = Cookie(None)):
     hostname = request.headers.get("host", "").lower()
@@ -2982,9 +2995,14 @@ async def index_page(request: Request, table: Optional[str] = None, q: Optional[
     if slug == "dash":
         return templates.TemplateResponse(request=request, name="dash.html", context={"request": request})
 
-    # 2. Handle 'q' token (Foodtruck mode)
+    # 2. Handle 'q' token (Foodtruck mode) with validation
     if q and not table:
-        table = q
+        with get_db() as db:
+            # Validate one-time QR
+            res = db.execute(text("SELECT is_used FROM qr_tokens WHERE token = :t"), {"t": q}).fetchone()
+            if res and res[0]:
+                return HTMLResponse(content="<div style='background:#000;color:#fff;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;text-align:center;'><h1>🛑 KOD WYGASŁ</h1><p>Ten kod QR został już wykorzystany. Poproś obsługę o nowy kod do zamówienia.</p></div>", status_code=403)
+            table = q
 
     if not burger_session:
         burger_session = str(uuid.uuid4())
