@@ -156,7 +156,7 @@ def seed_products():
 
     # Upsert menu products to database
     for key, data in products.items():
-        db.update_one({"_id": key}, {"$set": data}, upsert=True)
+        db["menu"].update_one({"_id": key}, {"$set": data}, upsert=True)
 
     print(f"SUCCESS: {len(products)} products seeded for {tenant}.")
     

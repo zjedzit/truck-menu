@@ -99,7 +99,7 @@ def seed_bar_data():
 
     # Upsert menu products to database
     for key, data in products.items():
-        db.update_one({"_id": key}, {"$set": data}, upsert=True)
+        db["menu"].update_one({"_id": key}, {"$set": data}, upsert=True)
 
     print("Menu seeded successfully.")
     print("Generating simulated historical monthly sales (approx. 600 orders)...")
