@@ -43,7 +43,7 @@ def setup_tenancy(app, SessionLocal, Base):
     router = APIRouter(prefix="/api/admin", tags=["Tenancy"])
 
     def require_dash_token(request: Request):
-        token = os.environ.get("DASH_ADMIN_TOKEN", "elvis-secure-token")
+        token = os.environ.get("DASH_ADMIN_TOKEN", "zjedzit-secure-token")
         provided = request.headers.get("X-Dash-Token") or request.query_params.get("token")
         if provided != token:
             raise HTTPException(status_code=403, detail="Brak uprawnień administratora")

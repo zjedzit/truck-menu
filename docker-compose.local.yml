@@ -21,7 +21,7 @@ services:
     environment:
       - MONGO_URI=mongodb://mongo:27017
     volumes:
-      - .:/opt/elvis:cached
+      - .:/opt/zjedzit:cached
     ports:
       - "8080:8080"
     depends_on:

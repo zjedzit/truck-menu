@@ -2,9 +2,9 @@
 set -euo pipefail
 
 # === USTAWIENIA DOMYŚLNE ===
-BASE_DIR="/opt/elvis/ovh"
-CODE_DIR="/home/debian/truck-menu"          # tu MUSI być main.py + tenancy.py (bind-mount -> /app)
-MAIN_ENV="/home/debian/truck-menu/ovh/.env" # główny env, skąd weźmiemy hasła/tokeny
+BASE_DIR="/opt/zjedzit/ovh"
+CODE_DIR="/opt/zjedzit"
+MAIN_ENV="/opt/zjedzit/ovh/.env"
 DOMAIN_ROOT_DEFAULT="zjedz.it"
 
 usage() {
@@ -134,14 +134,14 @@ services:
       - ${CODE_DIR}:/app:cached
     networks:
       - ${SLUG}_net
-      - ovh_elvis_net
+      - zjedzit_net
 
 networks:
   ${SLUG}_net:
     driver: bridge
-  ovh_elvis_net:
+  zjedzit_net:
     external: true
-    name: ovh_elvis_net
+    name: zjedzit_net
 
 volumes:
   ${SLUG}_db_data:
@@ -168,12 +168,12 @@ services:
     volumes:
       - ${CODE_DIR}:/app:cached
     networks:
-      - ovh_elvis_net
+      - zjedzit_net
 
 networks:
-  ovh_elvis_net:
+  zjedzit_net:
     external: true
-    name: ovh_elvis_net
+    name: zjedzit_net
 EOF
 else
   echo "BŁĄD: --mode musi być perdb albo shareddb"
@@ -185,5 +185,5 @@ echo "📁 Folder: ${TEMPLATE_DIR}"
 echo "▶ Start:"
 echo "   cd ${TEMPLATE_DIR} && docker compose --env-file .env up -d --build"
 echo ""
-echo "🧪 Test /health (z kontenera Caddy lub innego w sieci ovh_elvis_net):"
+echo "🧪 Test /health (z kontenera Caddy lub innego w sieci zjedzit_net):"
 echo "   docker exec -it zjedzit_caddy sh -c 'wget -qO- http://${SLUG}_app:8080/health ; echo'"

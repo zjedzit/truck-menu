@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Script do instalacji aplikacji Elvis Burger POS na Ubuntu 24.04
+# Script do instalacji aplikacji Zjedz.it POS na Ubuntu 24.04
 # Skrypt konfiguruje środowisko, instaluje wymagane pakiety i uruchamia aplikację
 
 set -e  # Przerwij skrypt przy pierwszym błędzie
 
-echo "=== Instalacja aplikacji Elvis Burger POS ==="
+echo "=== Instalacja aplikacji Zjedz.it POS ==="
 
 # 1. Aktualizacja systemu
 echo "Aktualizacja systemu..."
@@ -23,25 +23,25 @@ newgrp docker
 
 # 4. Tworzenie katalogu projektu
 echo "Tworzenie katalogu projektu..."
-sudo mkdir -p /opt/elvis
-sudo chown $USER:$USER /opt/elvis
+sudo mkdir -p /opt/zjedzit
+sudo chown $USER:$USER /opt/zjedzit
 
 # 5. Klonowanie repozytorium (jeśli nie istnieje)
-if [ ! -d "/opt/elvis/.git" ]; then
+if [ ! -d "/opt/zjedzit/.git" ]; then
     echo "Klonowanie repozytorium..."
-    cd /opt/elvis
+    cd /opt/zjedzit
     git clone https://github.com/zjedzit/truck-menu.git .
 else
     echo "Repozytorium już istnieje, aktualizacja..."
-    cd /opt/elvis
+    cd /opt/zjedzit
     git pull
 fi
 
 # 6. Konfiguracja środowiska
 echo "Konfiguracja środowiska..."
-cd /opt/elvis/ovh
+cd /opt/zjedzit/ovh
 cp .env.example .env
 
 echo "=== Instalacja zakończona ==="
-echo "Teraz edytuj plik /opt/elvis/ovh/.env z odpowiednimi wartościami"
+echo "Teraz edytuj plik /opt/zjedzit/ovh/.env z odpowiednimi wartościami"
 echo "Następnie uruchom: docker compose up -d --build"
