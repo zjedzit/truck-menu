@@ -617,6 +617,14 @@
                     </div>
                     <button class="btn-save" onclick="generateQR()">GENERUJ KOD QR</button>
                     <button class="btn-save" onclick="generateOneTimeQR()" style="margin-top:10px; background:var(--green);">⚡ GENERUJ KLUCZ JEDNORAZOWY</button>
+                    
+                    <div id="qr-link-display" style="display:none; margin-top:15px; padding:10px; background:#000; border:1px solid var(--gold); border-radius:8px;">
+                        <label style="font-size:0.7em; color:#888; display:block; margin-bottom:5px;">LINK DO ZAMÓWIENIA:</label>
+                        <div style="display:flex; gap:10px;">
+                            <input type="text" id="qr-link-text" readonly style="flex:1; background:transparent; border:none; color:var(--gold); font-family:monospace; font-size:0.8em;">
+                            <button onclick="copyQRLink()" style="background:var(--gold); border:none; padding:5px 10px; border-radius:4px; font-size:0.7em; font-weight:bold; cursor:pointer;">KOPIUJ</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-container"
@@ -668,12 +676,23 @@
                     const res = await fetch('/api/admin/create_qr');
                     const data = await res.json();
                     if (data.ok) {
-                        document.getElementById('qr-text').value = window.location.origin + data.url;
+                        const fullUrl = window.location.origin + data.url;
+                        document.getElementById('qr-text').value = fullUrl;
+                        document.getElementById('qr-link-text').value = fullUrl;
+                        document.getElementById('qr-link-display').style.display = 'block';
                         document.getElementById('qr-name').value = "Jednorazowy: " + data.token.substring(0,5);
                         generateQR();
                         showToast("✨ Wygenerowano bezpieczny, jednorazowy klucz!");
                     }
                 } catch(e) { showToast("Błąd generowania klucza."); }
+            }
+
+            function copyQRLink() {
+                const copyText = document.getElementById("qr-link-text");
+                copyText.select();
+                copyText.setSelectionRange(0, 99999);
+                navigator.clipboard.writeText(copyText.value);
+                showToast("📋 Link skopiowany do schowka!");
             }
 
             function generateQR(isAuto = false) {

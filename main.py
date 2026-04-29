@@ -64,6 +64,9 @@ async def startup_event():
             conn.session.execute(text("ALTER TABLE pos_history ADD COLUMN IF NOT EXISTS session_id VARCHAR"))
             conn.session.execute(text("ALTER TABLE pos_history ADD COLUMN IF NOT EXISTS fiscal BOOLEAN DEFAULT TRUE"))
             
+            # Migration for QR Tokens table
+            conn.session.execute(text("CREATE TABLE IF NOT EXISTS qr_tokens (token VARCHAR PRIMARY KEY, is_used BOOLEAN DEFAULT FALSE, created_at TIMESTAMP, tenant_id VARCHAR)"))
+            
             conn.session.commit()
             logger.info("Database migration: all columns checked and updated.")
         except Exception as mig_err:
@@ -3004,10 +3007,16 @@ async def index_page(request: Request, table: Optional[str] = None, q: Optional[
     # 2. Handle 'q' token (Foodtruck mode) with validation
     if q and not table:
         with get_db() as db:
-            # Validate one-time QR
-            res = db.execute(text("SELECT is_used FROM qr_tokens WHERE token = :t"), {"t": q}).fetchone()
-            if res and res[0]:
+            # Validate one-time QR (must match tenant and not be used)
+            res = db.execute(text("SELECT is_used FROM qr_tokens WHERE token = :t AND tenant_id = :tid"), 
+                           {"t": q, "tid": slug}).fetchone()
+            
+            if not res:
+                return HTMLResponse(content="<div style='background:#000;color:#fff;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;text-align:center;'><h1>⚠️ BŁĘDNY KOD</h1><p>Ten kod QR nie istnieje lub nie należy do tej restauracji.</p></div>", status_code=404)
+            
+            if res[0]:
                 return HTMLResponse(content="<div style='background:#000;color:#fff;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;text-align:center;'><h1>🛑 KOD WYGASŁ</h1><p>Ten kod QR został już wykorzystany. Poproś obsługę o nowy kod do zamówienia.</p></div>", status_code=403)
+            
             table = q
 
     if not burger_session:
