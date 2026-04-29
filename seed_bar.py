@@ -6,9 +6,11 @@ from datetime import datetime, timedelta, timezone
 
 # Allow imports from main
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from main import SessionLocal, MongoCompatibility
+from main import SessionLocal, MongoCompatibility, tenant_context
 
 def seed_bar_data():
+    # Set context for the compatibility layer
+    tenant_context.set("bar")
     if os.environ.get("BRAND", "").lower() != "bar":
         print("This script is meant to be run inside the 'bar' tenant (bar_app container).")
         print(f"Current BRAND: {os.environ.get('BRAND')}")
