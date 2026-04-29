@@ -39,6 +39,16 @@ tenant_context: ContextVar[Optional[str]] = ContextVar("tenant_id", default=None
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def make_serializable(obj):
+    """Helper to convert objects (like datetime) to JSON-serializable types"""
+    if isinstance(obj, dict):
+        return {k: make_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [make_serializable(i) for i in obj]
+    elif isinstance(obj, datetime):
+        return obj.isoformat()
+    return obj
+
 @app.on_event("startup")
 async def startup_event():
     """Ensure database connection on startup"""
@@ -1316,12 +1326,13 @@ class CollectionWrapper:
                 
                 if item:
                     new_data = item.data.copy() if item.data else {}
-                    new_data.update(changes)
+                    new_data.update({k: make_serializable(v) for k, v in changes.items()})
                     item.data = new_data
                     flag_modified(item, "data")
                     self.session.commit()
                 elif upsert:
-                    new_item = AppConfig(id=real_id, data=changes)
+                    item_data = {k: make_serializable(v) for k, v in changes.items()}
+                    new_item = AppConfig(id=real_id, data=item_data)
                     self.session.add(new_item)
                     self.session.commit()
                 return
@@ -1420,7 +1431,7 @@ class CollectionWrapper:
             if not self._is_native():
                 # Emulacja dla kolekcji nie posiadających własnych tabel (np. sessions, active_tables)
                 real_id = self._get_config_id(doc_id)
-                data = {k: v for k, v in document.items() if k != "_id" and k != "id"}
+                data = {k: make_serializable(v) for k, v in document.items() if k != "_id" and k != "id"}
                 item = self.session.query(AppConfig).filter(AppConfig.id == real_id).first()
                 if item:
                     item.data = data
@@ -1521,6 +1532,7 @@ async def seed_data():
 AI_CONFIG_PATH = APP_DIR / "ai_config.json"
 API_KEY = os.environ.get("OVH_AI_ENDPOINTS_ACCESS_TOKEN", "")
 AI_MODEL_NAME = "gpt-oss-120b"
+
 
 def load_ai_config():
     global API_KEY, AI_MODEL_NAME, ai_client
@@ -2957,7 +2969,7 @@ async def zamowienie_entry(request: Request, burger_session: Optional[str] = Coo
     if burger_session and conn:
         active_table = conn["active_tables"].find_one({"session_id": burger_session})
         if active_table:
-            return RedirectResponse(url=f"/?table={active_table['_id']}")
+            return RedirectResponse(url=f"/session/{burger_session}")
         
         # Jeśli ma ciasteczko, ale nie ma go w active_tables, sprawdź czy jest w ogóle sesja
         session = conn["sessions"].find_one({"_id": burger_session})
@@ -2968,32 +2980,20 @@ async def zamowienie_entry(request: Request, burger_session: Optional[str] = Coo
                 {"$set": {"table_number": str(session["session_number"]), "session_id": burger_session}}, 
                 upsert=True
             )
-            return RedirectResponse(url=f"/?q={session['session_number']}")
+            return RedirectResponse(url=f"/session/{burger_session}")
 
     # 2. Jeśli nie ma, stwórz nową trwałą sesję
     session = create_session(mode="foodtruck")
     assigned_number = session.get("session_number")
+    session_id = session.get("session_id")
     
-    if not assigned_number:
+    if not assigned_number or not session_id:
         return HTMLResponse(content="<div style='background:#000;color:#fff;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;text-align:center;'><h1>🛑 BRAK WOLNYCH MIEJSC</h1><p>Wszystkie sesje (1-30) są zajęte.</p></div>", status_code=503)
 
-    response = RedirectResponse(url=f"/?q={assigned_number}")
-    # ZAWSZE ustawiamy/aktualizujemy ciasteczko, aby zgadzało się z sesją w bazie
-    response.set_cookie(key="burger_session", value=session["session_id"], max_age=86400, path="/")
-    
+    response = RedirectResponse(url=f"/session/{session_id}")
+    response.set_cookie(key="burger_session", value=session_id, max_age=86400 * 30, httponly=True)
     return response
 
-@app.get("/api/admin/create_qr")
-async def create_qr_token():
-    import random, string
-    token = ''.join(random.choices(string.ascii_lowercase + string.digits, k=15))
-    with get_db() as db:
-        # Inicjalizacja tabeli jeśli nie istnieje
-        db.execute(text("CREATE TABLE IF NOT EXISTS qr_tokens (token VARCHAR PRIMARY KEY, is_used BOOLEAN DEFAULT FALSE, created_at TIMESTAMP, tenant_id VARCHAR)"))
-        db.execute(text("INSERT INTO qr_tokens (token, is_used, created_at, tenant_id) VALUES (:t, FALSE, :c, :tid)"), 
-                   {"t": token, "c": datetime.utcnow(), "tid": tenant_context.get()})
-        db.commit()
-    return {"ok": True, "token": token, "url": f"/?q={token}"}
 
 @app.get("/", response_class=HTMLResponse)
 async def index_page(request: Request, table: Optional[str] = None, q: Optional[str] = None, burger_session: Optional[str] = Cookie(None)):
