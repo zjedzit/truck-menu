@@ -20,9 +20,20 @@ from sqlalchemy import create_engine, Column, String, Integer, Float, Boolean, D
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
+class TenantRequest(BaseModel):
+    tenant: str
+    pin: str
+    tenant_token: Optional[str] = None
+
+
+
+from contextvars import ContextVar
 
 app = FastAPI()
 APP_DIR = Path(__file__).resolve().parent
+
+# Global context for multi-tenancy
+tenant_context: ContextVar[Optional[str]] = ContextVar("tenant_id", default=None)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -44,6 +55,10 @@ async def startup_event():
             conn.session.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS price FLOAT"))
             conn.session.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS note VARCHAR"))
             conn.session.execute(text("ALTER TABLE orders ADD COLUMN IF NOT EXISTS to_kitchen BOOLEAN DEFAULT TRUE"))
+
+            # Migrations for Tenants (status, deleted_at)
+            conn.session.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS status VARCHAR DEFAULT 'active'"))
+            conn.session.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP"))
             
             conn.session.commit()
             logger.info("Database migration: all columns checked and updated.")
@@ -84,6 +99,23 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         status_code=exc.status_code,
         content={"ok": False, "error": str(exc.detail)},
     )
+
+# --- MULTI-TENANT MIDDLEWARE ---
+from tenancy import extract_tenant_slug
+
+@app.middleware("http")
+async def tenant_middleware(request: Request, call_next):
+    hostname = request.headers.get("host")
+    slug = extract_tenant_slug(hostname)
+    
+    # "dash" is a special system tenant or just the dashboard
+    if slug == "dash":
+        tenant_context.set("system")
+    else:
+        tenant_context.set(slug)
+    
+    response = await call_next(request)
+    return response
 
 # --- HARDWARE & PRINTER API ---
 @app.post("/api/hardware/print")
@@ -298,54 +330,23 @@ async def get_nip_data(nip: str):
 
 
 
-# Helper for getting system mode with DB persistence + File Override (2.0)
+# Helper for getting system mode with DB persistence (Tenant-Aware 2.1)
 def get_system_mode():
-    # 0. Supreme Override via File (Radical Simplicity for 2.0)
-    try:
-        if os.path.exists("system_mode.txt"):
-            with open("system_mode.txt", "r") as f:
-                mode = f.read().strip().lower()
-                if mode in ["foodtruck", "restaurant"]:
-                    logger.info(f"[ELVIS 2.0] !!! FILE OVERRIDE DETECTED !!! => {mode}")
-                    return mode
-    except Exception as e:
-        logger.error(f"[ELVIS 2.0] Error reading system_mode.txt: {e}")
+    current_tenant = tenant_context.get()
+    if not current_tenant or current_tenant == "system":
+        return "restaurant" # Default for dashboard/system
 
-    brand_id = os.environ.get("BRAND", "ELVIS").lower()
-    logger.info(f"[ELVIS 2.0] Checking persistence for {brand_id}...")
     try:
         conn = get_db()
         if conn:
-            # 1. Try brand ID (lowercase)
-            rest = conn["restaurants"].find_one({"_id": brand_id})
-            if rest and "mode" in rest:
-                logger.info(f"--- DB FOUND: '{brand_id}' mode: {rest['mode']} ---")
-                return rest["mode"]
-                
-            # 2. Try UPPERCASE brand ID
-            rest = conn["restaurants"].find_one({"_id": brand_id.upper()})
-            if rest and "mode" in rest:
-                logger.info(f"--- DB FOUND (UPPER): '{brand_id.upper()}' mode: {rest['mode']} ---")
-                return rest["mode"]
-
-            # 3. Try global fallback 'elvis'
-            rest = conn["restaurants"].find_one({"_id": "elvis"})
-            if rest and "mode" in rest:
-                logger.info(f"--- DB FOUND (GLOBAL): 'elvis' mode: {rest['mode']} ---")
-                return rest["mode"]
-
-            # 4. Fallback to general config
-            config = conn["config"].find_one({"_id": "system_settings"})
-            if config and "mode" in config:
-                logger.info(f"--- DB FOUND (CONFIG): mode: {config['mode']} ---")
-                return config["mode"]
+            # Check for restaurant-specific mode in the 'restaurants' table
+            rest = conn.session.query(Restaurant).filter(Restaurant.id == current_tenant).first()
+            if rest:
+                return rest.mode
     except Exception as e:
-        logger.error(f"--- DATABASE ERROR during get_system_mode: {e} ---")
+        logger.error(f"Error in get_system_mode for {current_tenant}: {e}")
     
-    # 5. Environment variable as last resort
-    env_mode = os.environ.get("SYSTEM_MODE", "restaurant")
-    logger.info(f"[ELVIS 2.0] FINAL MODE => {env_mode} (Source: ENV/DEFAULT)")
-    return env_mode
+    return "restaurant"
 
 def is_nfc_required():
     try:
@@ -883,6 +884,7 @@ class Client(Base):
     full_name = Column(String)
     marketing_consent = Column(Boolean, default=False)
     registration_id = Column(String, unique=True)
+    tenant_id = Column(String, index=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Staff(Base):
@@ -893,6 +895,7 @@ class Staff(Base):
     nfc_id = Column(String, unique=True, index=True)
     is_active = Column(Boolean, default=False)
     role = Column(String) # 'waiter', 'chef', 'admin'
+    tenant_id = Column(String, primary_key=True, index=True, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 class StaffActivity(Base):
@@ -913,6 +916,7 @@ class CashSession(Base):
     difference = Column(Float)
     status = Column(String, default="open") # 'open', 'closed'
     staff_id = Column(String)
+    tenant_id = Column(String, index=True, nullable=False)
     notes = Column(String)
 
 class CashTransaction(Base):
@@ -923,7 +927,15 @@ class CashTransaction(Base):
     type = Column(String) # 'in', 'out', 'sale'
     reason = Column(String)
     staff_id = Column(String)
+    tenant_id = Column(String, index=True, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+class QRToken(Base):
+    __tablename__ = "qr_tokens"
+    token = Column(String, primary_key=True)
+    is_used = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    tenant_id = Column(String, index=True)
 
 class Order(Base):
     __tablename__ = "orders"
@@ -945,6 +957,7 @@ class Order(Base):
     invoice_company_name = Column(String)
     invoice_address = Column(String)
     status = Column(String, default="nowe")
+    tenant_id = Column(String, index=True, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 class MenuItem(Base):
@@ -963,6 +976,7 @@ class MenuItem(Base):
     to_kitchen = Column(Boolean, default=True) # Wysyłaj na KDS
     no_rating = Column(Boolean, default=False) # Ukryj gwiazdki oceniania
     sort_order = Column(Integer, default=10) # Kolejność sortowania
+    tenant_id = Column(String, primary_key=True, index=True, nullable=False)
 
 class POSHistory(Base):
     __tablename__ = "pos_history"
@@ -972,6 +986,7 @@ class POSHistory(Base):
     total = Column(Float)
     status = Column(String)
     printed = Column(Boolean, default=False)
+    tenant_id = Column(String, primary_key=True, index=True, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 class Restaurant(Base):
@@ -996,6 +1011,7 @@ class Reservation(Base):
     guests_count = Column(Integer)
     status = Column(String, default="confirmed") # confirmed, cancelled, completed
     note = Column(String)
+    tenant_id = Column(String, index=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class AuditLog(Base):
@@ -1087,16 +1103,27 @@ class CollectionWrapper:
                 return results
 
             items = []
+            current_tenant = tenant_context.get()
+            
+            # Base query
+            q = None
             if self.name == "menu":
-                items = self.session.query(MenuItem).all()
+                q = self.session.query(MenuItem)
             elif self.name == "staff":
-                items = self.session.query(Staff).all()
+                q = self.session.query(Staff)
             elif self.name == "pos_history":
-                items = self.session.query(POSHistory).all()
+                q = self.session.query(POSHistory)
             elif self.name == "orders":
-                items = self.session.query(Order).all()
+                q = self.session.query(Order)
             elif self.name == "restaurants":
-                items = self.session.query(Restaurant).all()
+                q = self.session.query(Restaurant)
+            
+            if q is not None:
+                # Automatyczne filtrowanie po tenant_id jeśli nie jesteśmy w trybie systemowym/dash
+                if current_tenant and current_tenant != "system":
+                    q = q.filter(text("tenant_id = :tid")).params(tid=current_tenant)
+                items = q.all()
+            
             elif self.name == "clients":
                 items = self.session.query(Client).all()
             elif self.name == "cash_sessions":
@@ -1151,6 +1178,12 @@ class CollectionWrapper:
             
             if model:
                 q = self.session.query(model)
+                
+                # Multi-tenant filter
+                current_tenant = tenant_context.get()
+                if current_tenant and current_tenant != "system" and hasattr(model, "tenant_id"):
+                    q = q.filter(model.tenant_id == current_tenant)
+
                 # Obsługa filtrów (np. _id, table_number, paid)
                 for k, v in query.items():
                     if k == "_id":
@@ -1166,6 +1199,7 @@ class CollectionWrapper:
         except Exception as e:
             logger.error(f"Error in delete_many({self.name}): {e}")
             self.session.rollback()
+            raise e
 
     def delete_one(self, query):
         """Emulacja delete_one"""
@@ -1193,36 +1227,47 @@ class CollectionWrapper:
                 return None
 
             item = None
+            current_tenant = tenant_context.get()
+            
+            # Base query preparation
+            q = None
             if self.name == "staff":
                 name = query.get("name") or item_id
-                item = self.session.query(Staff).filter(Staff.id == name).first()
+                q = self.session.query(Staff).filter(Staff.id == name)
             elif self.name == "orders":
-                item = self.session.query(Order).filter(Order.id == item_id).first()
+                q = self.session.query(Order).filter(Order.id == item_id)
+            elif self.name == "menu":
+                q = self.session.query(MenuItem).filter(MenuItem.id == item_id)
+            elif self.name == "restaurants":
+                q = self.session.query(Restaurant).filter(Restaurant.id == item_id)
+            elif self.name == "pos_history":
+                q = self.session.query(POSHistory).filter(POSHistory.id == item_id)
             elif self.name == "clients":
                 email = query.get("email")
-                item = self.session.query(Client).filter(Client.email == email).first()
-            elif self.name == "menu":
-                item = self.session.query(MenuItem).filter(MenuItem.id == item_id).first()
-            elif self.name == "pos_history":
-                item = self.session.query(POSHistory).filter(POSHistory.id == item_id).first()
-            elif self.name == "restaurants":
-                item = self.session.query(Restaurant).filter(Restaurant.id == item_id).first()
+                q = self.session.query(Client).filter(Client.email == email)
             elif self.name == "config":
                 item = self.session.query(AppConfig).filter(AppConfig.id == item_id).first()
                 if item:
                     d = item.data.copy() if item.data else {}
                     d["_id"] = item.id
                     return d
+            
+            if q:
+                # Multi-tenant filter
+                if current_tenant and current_tenant != "system" and hasattr(q.column_descriptions[0]['entity'], "tenant_id"):
+                    q = q.filter(q.column_descriptions[0]['entity'].tenant_id == current_tenant)
+                item = q.first()
 
             if item:
                 d = {k: v for k, v in item.__dict__.items() if not k.startswith('_')}
                 d["_id"] = d.pop("id", None)
-                if getattr(item, "options", None) and isinstance(item.options, dict):
+                if hasattr(item, "options") and isinstance(item.options, dict):
                     d.update(item.options)
                 return d
+            return None
         except Exception as e:
-            logger.error(f"Error in find_one: {e}")
-        return None
+            logger.error(f"Error in find_one({self.name}): {e}")
+            raise e
 
     def update_one(self, query, update_data, upsert=False):
         from sqlalchemy.orm.attributes import flag_modified
@@ -1249,12 +1294,23 @@ class CollectionWrapper:
                 return
 
             item = None
+            current_tenant = tenant_context.get()
+            
             if self.name == "menu":
-                item = self.session.query(MenuItem).filter(MenuItem.id == doc_id).first()
+                q = self.session.query(MenuItem).filter(MenuItem.id == doc_id)
+                if current_tenant and current_tenant != "system":
+                    q = q.filter(MenuItem.tenant_id == current_tenant)
+                item = q.first()
             elif self.name == "staff":
-                item = self.session.query(Staff).filter(Staff.id == doc_id).first()
+                q = self.session.query(Staff).filter(Staff.id == doc_id)
+                if current_tenant and current_tenant != "system":
+                    q = q.filter(Staff.tenant_id == current_tenant)
+                item = q.first()
             elif self.name == "orders":
-                item = self.session.query(Order).filter(Order.id == doc_id).first()
+                q = self.session.query(Order).filter(Order.id == doc_id)
+                if current_tenant and current_tenant != "system":
+                    q = q.filter(Order.tenant_id == current_tenant)
+                item = q.first()
             elif self.name == "restaurants":
                 item = self.session.query(Restaurant).filter(Restaurant.id == doc_id).first()
 
@@ -1294,11 +1350,17 @@ class CollectionWrapper:
                             setattr(new_item, k, v)
                 
                 if new_item:
+                    # Inject tenant_id on upsert
+                    current_tenant = tenant_context.get()
+                    if current_tenant and current_tenant != "system" and hasattr(new_item, "tenant_id"):
+                        new_item.tenant_id = current_tenant
+                    
                     self.session.add(new_item)
                     self.session.commit()
         except Exception as e:
-            logger.error(f"Error in update_one: {e}")
+            logger.error(f"Error in update_one({self.name}): {e}")
             self.session.rollback()
+            raise e
 
     def replace_one(self, query, replacement, upsert=False):
         # Emulacja replace_one (używana głównie przy init_db reset)
@@ -1351,6 +1413,12 @@ class CollectionWrapper:
                     elif "items" in model_cols and not final_params.get("items"):
                         final_params["items"] = leftovers
 
+
+                # Automatyczne dodawanie tenant_id przy zapisie
+                current_tenant = tenant_context.get()
+                if current_tenant and current_tenant != "system" and "tenant_id" not in final_params:
+                    final_params["tenant_id"] = current_tenant
+
                 obj = model(**final_params)
                 self.session.add(obj)
                 self.session.commit()
@@ -1358,6 +1426,7 @@ class CollectionWrapper:
         except Exception as e:
             logger.error(f"Error in insert_one({self.name}): {e}")
             self.session.rollback()
+            raise e
 
 def get_db():
     """Get database session (Postgres) wrapped in Mongo compatibility layer"""
@@ -1376,26 +1445,30 @@ def get_db():
 # --- STARTUP SEEDING ---
 @app.on_event("startup")
 async def seed_data():
-    """Seed initial staff with master NFC tags"""
+    """Seed initial staff and tenants for unified instance"""
     try:
         db = SessionLocal()
-        masters = [
-            ("Master 1", "0067305985"),
-            ("Master 2", "0575292482")
-        ]
+        
+        # 1. Seed Masters
+        masters = [("Master 1", "0067305985"), ("Master 2", "0575292482")]
         for name, nfc in masters:
             existing = db.query(Staff).filter(Staff.nfc_id == nfc).first()
             if not existing:
-                new_staff = Staff(
-                    id=str(uuid.uuid4())[:8],
-                    name=name,
-                    nfc_id=nfc,
-                    pin="123456", 
-                    role="admin", # admin has access to everything
-                    is_active=False
-                )
+                new_staff = Staff(id=str(uuid.uuid4())[:8], name=name, nfc_id=nfc, pin="123456", role="admin", is_active=False, tenant_id="system")
                 db.add(new_staff)
-                logger.info(f"Seeded master NFC: {name}")
+
+        # 2. Seed initial tenants for transition
+        tenants = ["stary", "nowy"]
+        for slug in tenants:
+            existing_tenant = db.query(Tenant).filter(Tenant.slug == slug).first()
+            if not existing_tenant:
+                new_t = Tenant(id=str(uuid.uuid4()), slug=slug, name=slug.capitalize(), status="active")
+                db.add(new_t)
+                # Also ensure Restaurant entry exists
+                new_r = Restaurant(id=slug, name=slug.capitalize(), mode="restaurant")
+                db.add(new_r)
+                logger.info(f"Seeded tenant for unified instance: {slug}")
+
         db.commit()
     except Exception as e:
         logger.error(f"Seeding error: {e}")
@@ -1896,6 +1969,35 @@ async def save_layout(request: Request):
 
 # --- AUTHENTICATION & ROLES ---
 
+@app.post("/api/admin/set_mode")
+async def set_mode(request: Request):
+    """Zmiana trybu pracy restauracji (Restaurant / Foodtruck)"""
+    try:
+        data = await request.json()
+        new_mode = data.get("mode")
+        auth_role = data.get("auth_role")
+        
+        if not check_role_access("admin", auth_role):
+            return JSONResponse({"ok": False, "error": "Brak uprawnień admina."}, status_code=403)
+            
+        current_tenant = tenant_context.get()
+        if not current_tenant or current_tenant == "system":
+            return JSONResponse({"ok": False, "error": "Nie można zmienić trybu dla systemu globalnego."}, status_code=400)
+            
+        conn = get_db()
+        if conn:
+            conn["restaurants"].update_one(
+                {"_id": current_tenant},
+                {"$set": {"mode": new_mode}},
+                upsert=True
+            )
+            await manager.broadcast(json.dumps({"type": "update"}))
+            return {"ok": True}
+        return JSONResponse({"ok": False, "error": "Baza danych niedostępna"}, status_code=500)
+    except Exception as e:
+        logger.error(f"Error in set_mode: {e}")
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
 @app.post("/api/admin/set_role")
 async def set_role(request: Request):
     data = await request.json()
@@ -2335,6 +2437,9 @@ async def add_order(order: dict):
                     "session_id": current_session,
                     "timestamp": datetime.now(timezone.utc)
                 }}, upsert=True)
+
+            # Blokada jednorazowego klucza QR
+            conn.execute(text("UPDATE qr_tokens SET is_used = TRUE WHERE token = :t"), {"t": table_num})
 
             order_data = {
                 "_id": str(uuid.uuid4()),
@@ -2782,6 +2887,18 @@ async def table_details(num: str):
 
 # --- HTML PAGES ---
 
+@app.get("/api/admin/create_qr")
+async def create_qr_token():
+    import random, string
+    token = ''.join(random.choices(string.ascii_lowercase + string.digits, k=15))
+    with get_db() as db:
+        # Inicjalizacja tabeli jeśli nie istnieje (prosta migracja)
+        db.execute(text("CREATE TABLE IF NOT EXISTS qr_tokens (token VARCHAR PRIMARY KEY, is_used BOOLEAN DEFAULT FALSE, created_at TIMESTAMP, tenant_id VARCHAR)"))
+        db.execute(text("INSERT INTO qr_tokens (token, is_used, created_at, tenant_id) VALUES (:t, FALSE, :c, :tid)"), 
+                   {"t": token, "c": datetime.utcnow(), "tid": tenant_context.get()})
+        db.commit()
+    return {"ok": True, "token": token, "url": f"/?q={token}"}
+
 @app.get("/zamowienie")
 async def zamowienie_entry(request: Request, burger_session: Optional[str] = Cookie(None)):
     """Automatyczne przydzielanie numerka (persystencja w DB)."""
@@ -2802,7 +2919,7 @@ async def zamowienie_entry(request: Request, burger_session: Optional[str] = Coo
                 {"$set": {"table_number": str(session["session_number"]), "session_id": burger_session}}, 
                 upsert=True
             )
-            return RedirectResponse(url=f"/?table={session['session_number']}")
+            return RedirectResponse(url=f"/?q={session['session_number']}")
 
     # 2. Jeśli nie ma, stwórz nową trwałą sesję
     session = create_session(mode="foodtruck")
@@ -2811,14 +2928,21 @@ async def zamowienie_entry(request: Request, burger_session: Optional[str] = Coo
     if not assigned_number:
         return HTMLResponse(content="<div style='background:#000;color:#fff;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;text-align:center;'><h1>🛑 BRAK WOLNYCH MIEJSC</h1><p>Wszystkie sesje (1-30) są zajęte.</p></div>", status_code=503)
 
-    response = RedirectResponse(url=f"/?table={assigned_number}")
+    response = RedirectResponse(url=f"/?q={assigned_number}")
     # ZAWSZE ustawiamy/aktualizujemy ciasteczko, aby zgadzało się z sesją w bazie
     response.set_cookie(key="burger_session", value=session["session_id"], max_age=86400, path="/")
     
     return response
 
 @app.get("/", response_class=HTMLResponse)
-async def index_page(request: Request, table: Optional[str] = None, burger_session: Optional[str] = Cookie(None)):
+async def index_page(request: Request, table: Optional[str] = None, q: Optional[str] = None, burger_session: Optional[str] = Cookie(None)):
+    if q and not table:
+        with get_db() as db:
+            # Sprawdź czy kod nie jest zużyty
+            res = db.execute(text("SELECT is_used FROM qr_tokens WHERE token = :t"), {"t": q}).fetchone()
+            if res and res[0]: # is_used == True
+                return HTMLResponse(content="<div style='background:#000;color:#fff;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;text-align:center;'><h1>🛑 KOD WYGASŁ</h1><p>Ten kod QR został już wykorzystany. Poproś obsługę o nowy kod do zamówienia.</p></div>", status_code=403)
+        table = q
     if get_brand(request) == "DASH":
         return templates.TemplateResponse(request=request, name="dash.html", context={"request": request})
 
@@ -2965,51 +3089,30 @@ async def health_check():
 
 @app.get("/api/dash/status")
 async def get_dash_status():
-    """Detailed health check for Docker, DB, and Tenants"""
-    status = {"db_alive": False, "db_size": "---", "pings": []}
-    
-    # 1. Check DB
+    """Returns status of all tenants from DB instead of Docker containers"""
+    status = {"db_alive": True, "db_size": "---", "pings": []}
     try:
         db = SessionLocal()
-        db.execute(text("SELECT 1"))
-        status["db_alive"] = True
+        tenants = db.query(Tenant).filter(Tenant.status != "deleted").order_by(Tenant.created_at.desc()).all()
         db.close()
-    except Exception as db_err:
-        logger.error(f"DASH DB ERROR: {db_err}")
-
-    # 2. Check Docker
-    try:
-        import docker
-        client = docker.from_env()
-        containers = client.containers.list(all=True)
         
-        db_count = 0
-        for c in containers:
-            name = c.name
-            if "_db" in name or "postgres" in name:
-                db_count += 1
-                
-            if name.endswith("_app") or name == "zjedzit_app":
-                prefix = "elvis" if name == "zjedzit_app" else name.split("_")[0]
-                is_running = c.status == "running"
-                
-                status["pings"].append({
-                    "domain": f"{prefix}.zjedz.it",
-                    "alive": is_running,
-                    "db_alive": is_running, # Assume DB is up if app is running for now
-                    "app_health_db": is_running,
-                    "latency_ms": 1 if is_running else 0,
-                    "db_size": "OK" if is_running else "ERR",
-                    "app_status": c.status,
-                    "custom_template": False,
-                    "template_path": f"/opt/elvis/{prefix}"
-                })
-        status["db_instances"] = db_count
-        logger.info(f"DASH: Found {len(status['pings'])} tenant containers and {db_count} DBs.")
+        found = []
+        for t in tenants:
+            found.append({
+                "domain": f"{t.slug}.zjedz.it",
+                "alive": t.status == "active",
+                "db_alive": True,
+                "app_health_db": True,
+                "latency_ms": 1,
+                "db_size": "---",
+                "app_status": t.status,
+                "custom_template": False,
+                "template_path": f"/opt/zjedzit/{t.slug}" if t.status == "active" else "None"
+            })
+        status["pings"] = found
     except Exception as e:
-        logger.error(f"DASH DOCKER ERROR: {str(e)}")
-        status["error"] = f"Docker Error: {str(e)}"
-        
+        logger.error(f"DASH STATUS ERROR: {str(e)}")
+        status["error"] = f"DB Error: {str(e)}"
     return status
 
 @app.get("/test_docker")
@@ -3032,33 +3135,26 @@ async def allow_domain(domain: str):
     if any(domain == root or domain.endswith(f".{root}") for root in allowed_roots):
         return Response(status_code=200)
     
-    # Check database for tenant slugs
+    # Check database for tenant slug
     try:
-        db = SessionLocal()
         slug = domain.split(".")[0]
-        exists = db.query(Tenant).filter(Tenant.slug == slug).first()
+        db = SessionLocal()
+        t = db.query(Tenant).filter(Tenant.slug == slug, Tenant.status == "active").first()
         db.close()
-        if exists:
+        if t:
             return Response(status_code=200)
-    except:
-        pass
-
+    except: pass
+    
     return Response(status_code=403)
-
-class TenantRequest(BaseModel):
-    tenant: str
-    pin: str
-    tenant_token: str = None
 
 @app.post("/api/dash/create_tenant")
 async def create_tenant(payload: TenantRequest):
-    tenant = payload.tenant.lower().strip()
+    """Adds a new restaurant to the system (Row-Level)"""
+    tenant_slug = payload.tenant.lower().strip()
     pin = payload.pin
-    tenant_token = payload.tenant_token
     
+    # 1. PIN Verification
     import json
-    import os
-    from pathlib import Path
     cfg_path = Path(__file__).parent / "ai_config.json"
     master_pin = os.environ.get("MASTER_PIN", "1234")
     if cfg_path.exists():
@@ -3068,126 +3164,50 @@ async def create_tenant(payload: TenantRequest):
         except: pass
         
     if pin != master_pin: raise HTTPException(401, "Błędny PIN Architekta.")
-    if not tenant.isalnum():
+    if not tenant_slug.isalnum():
         return JSONResponse({"error": "Nazwa musi być alfanumeryczna."}, status_code=400)
         
     try:
-        import docker
-        import yaml
-        
-        # 1. Edycja pliku Caddyfile
-        caddyfile_path = "ovh/Caddyfile"
-        try:
-            with open(caddyfile_path, "r", encoding="utf-8") as f:
-                caddy_content = f.read()
-        except:
-            caddyfile_path = "/app/ovh/Caddyfile" # Fallback absolute path in docker
-            with open(caddyfile_path, "r", encoding="utf-8") as f:
-                caddy_content = f.read()
-
-        if f"{tenant}.zjedz.it" in caddy_content:
+        db = SessionLocal()
+        existing = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
+        if existing:
+            db.close()
             return JSONResponse({"error": "Ten tenant już istnieje."}, status_code=400)
             
-        new_caddy_block = f"\n\n{tenant}.zjedz.it {{\n    reverse_proxy {tenant}_app:8080\n}}\n"
-        with open(caddyfile_path, "a", encoding="utf-8") as f:
-            f.write(new_caddy_block)
-            
-        # 2. Edycja pliku docker-compose.yml za pomocą yaml (bezpiecznie omijając blok 'volumes' na końcu)
-        compose_path = "ovh/docker-compose.yml"
-        import os as _os
-        if not _os.path.exists(compose_path):
-            compose_path = "/app/ovh/docker-compose.yml"
-            
-        with open(compose_path, "r", encoding="utf-8") as f:
-            compose_data = yaml.safe_load(f)
-            
-        if "volumes" not in compose_data or compose_data["volumes"] is None: 
-            compose_data["volumes"] = {}
+        # 2. Add to Tenants table
+        new_tenant = Tenant(
+            id=str(uuid.uuid4()),
+            slug=tenant_slug,
+            name=tenant_slug.capitalize(),
+            status="active"
+        )
+        db.add(new_tenant)
         
-        db_vol_name = f"{tenant}_db_data"
-        compose_data["volumes"][db_vol_name] = {}
-        
-        compose_data["services"][f"{tenant}_db"] = {
-            "image": "postgres:15-alpine",
-            "restart": "always",
-            "environment": {
-                "POSTGRES_USER": "marcin",
-                "POSTGRES_PASSWORD": _os.environ.get("DATABASE_PASSWORD", "Haslo123!"),
-                "POSTGRES_DB": "saas_db"
-            },
-            "volumes": [f"{db_vol_name}:/var/lib/postgresql/data"],
-            "networks": ["elvis_net"]
-        }
-        
-        app_env = [
-            f"DATABASE_URL=postgresql://marcin:{_os.environ.get('DATABASE_PASSWORD', 'Haslo123!')}@{tenant}_db:5432/saas_db",
-            f"BRAND={tenant.upper()}"
-        ]
-        if tenant_token:
-            app_env.append(f"GEMINI_API_KEY={tenant_token}")
-            
-        compose_data["services"][f"{tenant}_db"]["container_name"] = f"{tenant}_db"
-        compose_data["services"][f"{tenant}_app"] = {
-            "build": {"context": "..", "dockerfile": "Dockerfile" if compose_path.endswith("ovh/docker-compose.yml") else "ovh/Dockerfile"},
-            "image": "ovh-app",
-            "container_name": f"{tenant}_app",
-            "restart": "always",
-            "environment": app_env,
-            "depends_on": [f"{tenant}_db"],
-            "volumes": [
-                "/opt/elvis:/app:cached",
-                "/var/run/docker.sock:/var/run/docker.sock"
-            ],
-            "networks": ["elvis_net"]
-        }
-        
-        with open(compose_path, "w", encoding="utf-8") as f:
-            yaml.dump(compose_data, f, default_flow_style=False, sort_keys=False)
-
-        # 3. Uruchomienie dockera za pomocą zainstalowanego klienta Docker CLI w kontenerze
-        import subprocess
-        try:
-            print(f"Starting orchestration for {tenant}...")
-            # Użyj poprawnego katalogu jeśli w dockrze
-            cmd = f"docker compose -f {compose_path} up -d {tenant}_db {tenant}_app"
-            result = subprocess.run(
-                cmd,
-                shell=True,
-                capture_output=True, text=True
+        # 3. Add to Restaurant info table (unified)
+        conn = get_db()
+        if conn:
+            conn["restaurants"].update_one(
+                {"_id": tenant_slug},
+                {"$set": {"name": tenant_slug.capitalize(), "mode": "restaurant"}},
+                upsert=True
             )
-            print("Compose output:", result.stdout)
-            if result.returncode != 0:
-                print("Compose error:", result.stderr)
-                return JSONResponse({"error": f"Błąd w Docker Compose: {result.stderr}"}, status_code=500)
-        except Exception as compose_err:
-            print("Compose orchestrator error, but YAML updated:", compose_err)
-            return JSONResponse({"error": f"Błąd komunikacji z docker-compose: {str(compose_err)}"}, status_code=500)
-            
-        # 4. Reload Caddy
-        try:
-            client = docker.from_env()
-            caddy_c = client.containers.get("elvis_caddy")
-            caddy_c.exec_run("caddy reload --config /etc/caddy/Caddyfile")
-        except Exception as caddy_err:
-            try:
-                # Fallback to other possible name
-                caddy_c = client.containers.get("zjedzit_caddy")
-                caddy_c.exec_run("caddy reload --config /etc/caddy/Caddyfile")
-            except:
-                print("Caddy reload error:", caddy_err)
-            
-        return {"success": True}
+        
+        db.commit()
+        db.close()
+        
+        return {"success": True, "message": "Restauracja dodana pomyślnie!"}
     except Exception as e:
+        logger.error(f"CREATE TENANT ERROR: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.post("/api/dash/delete_tenant")
 async def delete_tenant(payload: TenantRequest):
-    tenant = payload.tenant.lower().strip()
+    """Deletes/Disables a restaurant in the system (Row-Level)"""
+    tenant_slug = payload.tenant.lower().strip()
     pin = payload.pin
     
+    # 1. PIN Verification
     import json
-    import os
-    from pathlib import Path
     cfg_path = Path(__file__).parent / "ai_config.json"
     master_pin = os.environ.get("MASTER_PIN", "1234")
     if cfg_path.exists():
@@ -3197,106 +3217,31 @@ async def delete_tenant(payload: TenantRequest):
         except: pass
         
     if pin != master_pin: raise HTTPException(401, "Błędny PIN Architekta.")
-    
-    try:
-        import docker
-        import yaml
-        import subprocess
         
-        # 1. Stop and remove containers and volumes via Docker API
-        client = docker.from_env()
-        for suffix in ["_app", "_db"]:
-            c_name = f"{tenant}{suffix}"
-            try:
-                c = client.containers.get(c_name)
-                print(f"Stopping and removing container: {c_name}")
-                c.stop(timeout=5)
-                c.remove(v=True, force=True) 
-            except Exception as e:
-                print(f"Container {c_name} not found or already removed: {e}")
-
-        # 2. Edycja pliku Caddyfile (bardziej elastyczny regex)
-        caddyfile_path = "ovh/Caddyfile"
-        if not os.path.exists(caddyfile_path):
-            caddyfile_path = "/app/ovh/Caddyfile"
-            
-        if os.path.exists(caddyfile_path):
-            with open(caddyfile_path, "r", encoding="utf-8") as f:
-                content = f.read()
-            
-            # Pattern matches: optional newlines + domain { ... } + optional newlines
-            # Handles different spacing and variations in block content
-            import re
-            pattern = re.compile(rf"\s*{tenant}\.zjedz\.it\s*\{{[^}}]*\s*\}}", re.DOTALL)
-            new_content = pattern.sub("", content).strip()
-            
-            # Ensure Caddyfile stays clean
-            if new_content != content:
-                with open(caddyfile_path, "w", encoding="utf-8") as f:
-                    f.write(new_content + "\n")
-                print(f"Removed {tenant} from Caddyfile")
-
-        # 3. Edycja pliku docker-compose.yml
-        compose_path = "ovh/docker-compose.yml"
-        if not os.path.exists(compose_path):
-            compose_path = "/app/ovh/docker-compose.yml"
-            
-        if os.path.exists(compose_path):
-            with open(compose_path, "r", encoding="utf-8") as f:
-                compose_data = yaml.safe_load(f)
-            
-            modified = False
-            if "services" in compose_data:
-                for suffix in ["_app", "_db"]:
-                    svc_name = f"{tenant}{suffix}"
-                    if svc_name in compose_data["services"]:
-                        del compose_data["services"][svc_name]
-                        modified = True
-            
-            if "volumes" in compose_data and compose_data["volumes"]:
-                vol_name = f"{tenant}_db_data"
-                if vol_name in compose_data["volumes"]:
-                    del compose_data["volumes"][vol_name]
-                    modified = True
-            
-            if modified:
-                with open(compose_path, "w", encoding="utf-8") as f:
-                    yaml.dump(compose_data, f, default_flow_style=False, sort_keys=False)
-                print(f"Removed {tenant} from docker-compose.yml")
-
-        # 4. Reload Caddy
-        try:
-            caddy_c = None
-            try:
-                caddy_c = client.containers.get("zjedzit_caddy")
-            except:
-                caddy_c = client.containers.get("elvis_caddy")
-            
-            if caddy_c:
-                caddy_c.exec_run("caddy reload --config /etc/caddy/Caddyfile")
-                print("Caddy reloaded")
-        except Exception as ce:
-            print(f"Caddy reload failed: {ce}")
-            
-        # 5. Usunięcie wpisu z bazy danych (tenancy)
-        try:
-            db = SessionLocal()
-            db.query(Tenant).filter(Tenant.slug == tenant).delete()
-            db.commit()
+    try:
+        db = SessionLocal()
+        tenant = db.query(Tenant).filter(Tenant.slug == tenant_slug).first()
+        if not tenant:
             db.close()
-            print(f"Removed {tenant} from tenants table")
-        except Exception as dbe:
-            print(f"Failed to remove from DB: {dbe}")
-
-        return {"success": True}
+            return JSONResponse({"error": "Tenant nie istnieje."}, status_code=404)
+            
+        # Just mark as deleted/disabled to save space but keep history
+        tenant.status = "deleted"
+        tenant.deleted_at = datetime.utcnow()
+        
+        # Also mark the restaurant info
+        rest = db.query(Restaurant).filter(Restaurant.id == tenant_slug).first()
+        if rest:
+            db.delete(rest)
+            
+        db.commit()
+        db.close()
+        
+        return {"success": True, "message": "Restauracja została usunięta."}
     except Exception as e:
-        logger.error(f"Error in delete_tenant: {e}")
+        logger.error(f"DELETE TENANT ERROR: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
-
 
 @app.get("/dash", response_class=HTMLResponse)
 async def dash_page(request: Request):
-    if request.url.hostname == "dash.zjedz.it":
-        return templates.TemplateResponse(request=request, name="dash.html", context={"request": request})
-    # Redirect or handle otherwise
-    return templates.TemplateResponse(request=request, name="dash.html", context={"request": request})
+    return templates.TemplateResponse(request=request, name="dash.html", context={"request": request})
