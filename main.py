@@ -2913,7 +2913,9 @@ async def zamowienie_entry(request: Request, burger_session: Optional[str] = Coo
     return response
 
 @app.get("/", response_class=HTMLResponse)
-async def index_page(request: Request, table: Optional[str] = None, burger_session: Optional[str] = Cookie(None)):
+async def index_page(request: Request, table: Optional[str] = None, token: Optional[str] = None, burger_session: Optional[str] = Cookie(None)):
+    if token and not table:
+        table = token
     if get_brand(request) == "DASH":
         return templates.TemplateResponse(request=request, name="dash.html", context={"request": request})
 
