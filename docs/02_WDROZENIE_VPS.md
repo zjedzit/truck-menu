@@ -65,6 +65,34 @@ cd ~/truck-menu/ovh
 
 ---
 
+## 🥗 Inicjalizacja Danych (Seeding)
+
+Po pierwszym uruchomieniu systemu baza danych jest pusta. Możesz ją wypełnić przykładowymi danymi (menu, zdjęcia, historia sprzedaży) za pomocą skryptu:
+
+1. **Dla domyślnego brandu (bar):**
+   ```bash
+   docker exec -it zjedzit_app python seed_products.py
+   ```
+
+2. **Dla konkretnego tenanta (np. elvis):**
+   ```bash
+   docker exec -e BRAND=elvis -it zjedzit_app python seed_products.py
+   ```
+
+Skrypt automatycznie przypisuje zdjęcia z katalogu `static/images/` do produktów i generuje symulowaną historię sprzedaży z ostatnich 30 dni.
+
+---
+
+## 📱 System Kluczy Jednorazowych (QR)
+
+System wspiera generowanie jednorazowych dostępów do menu (idealne dla Food Trucków):
+1. Przejdź do `/admin` -> zakładka **KOD QR**.
+2. Kliknij **GENERUJ KLUCZ JEDNORAZOWY**.
+3. Skopiuj link lub wydrukuj wygenerowany kod QR.
+4. Po złożeniu pierwszego zamówienia przez klienta, klucz wygasa automatycznie, co zapobiega nieautoryzowanym zamówieniom spoza kolejki.
+
+---
+
 ## 🔐 Bezpieczeństwo i Backup
 1. **SSL**: Caddy automatycznie zarządza certyfikatami. Jeśli używasz Nginx, użyj `certbot --nginx`.
 2. **Backup DB**: 

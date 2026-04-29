@@ -52,6 +52,10 @@ graph TD
 - **Logowanie**: Każdy pracownik posiada kartę/brelok NFC.
 - **Zabezpieczenie**: Krytyczne funkcje panelu wydawki (rabaty, zwroty) wymagają zbliżenia karty pracownika.
 
+### 5. Tokenized Table Assignment (QR One-Time)
+- **Bezpieczeństwo**: System generuje unikalne tokeny URL `/?q=TOKEN`.
+- **Cykl życia**: Token po wejściu klienta blokuje "stolik" dla jego sesji. Po wysłaniu zamówienia do kuchni, token w bazie danych zostaje oznaczony jako `is_used=TRUE`, co uniemożliwia ponowne wykorzystanie tego samego kodu.
+
 ---
 
 ## 🚀 Zalety Modelu Cloud-Edge
