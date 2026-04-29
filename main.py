@@ -415,7 +415,7 @@ def set_system_mode(mode: str):
     return False
 
 # --- QR TRACKING COMPONENTS ---
-qr_router = APIRouter(prefix="/qrtrack", tags=["QR Tracking"])
+qr_router = APIRouter(tags=["QR Tracking"])
 
 class SessionItem(BaseModel):
     item_id: str
