@@ -1143,7 +1143,7 @@ class CollectionWrapper:
                     # Filter emulation
                     if all(d.get(k) == v for k, v in query.items() if k != "_id"):
                         results.append(d)
-                return results
+                return MockCursor(results)
 
             items = []
             current_tenant = tenant_context.get()
@@ -1180,7 +1180,7 @@ class CollectionWrapper:
                     d["_id"] = i.id
                     if all(d.get(k) == v for k, v in query.items() if k != "_id"):
                         results.append(d)
-                return results
+                return MockCursor(results)
 
             for i in items:
                 d = {k: v for k, v in i.__dict__.items() if not k.startswith('_')}
