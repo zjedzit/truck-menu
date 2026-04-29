@@ -60,6 +60,10 @@ async def startup_event():
             conn.session.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS status VARCHAR DEFAULT 'active'"))
             conn.session.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP"))
             
+            # Migrations for POSHistory
+            conn.session.execute(text("ALTER TABLE pos_history ADD COLUMN IF NOT EXISTS session_id VARCHAR"))
+            conn.session.execute(text("ALTER TABLE pos_history ADD COLUMN IF NOT EXISTS fiscal BOOLEAN DEFAULT TRUE"))
+            
             conn.session.commit()
             logger.info("Database migration: all columns checked and updated.")
         except Exception as mig_err:
@@ -1006,10 +1010,12 @@ class POSHistory(Base):
     __tablename__ = "pos_history"
     id = Column(String, primary_key=True)
     table_number = Column(String)
+    session_id = Column(String)
     items = Column(JSON)
     total = Column(Float)
     status = Column(String)
     printed = Column(Boolean, default=False)
+    fiscal = Column(Boolean, default=True)
     tenant_id = Column(String, primary_key=True, index=True, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
