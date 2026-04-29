@@ -14,12 +14,27 @@ Cała dokumentacja została przeniesiona i zoptymalizowana w folderze `/docs`.
 
 ---
 ## 🚀 Szybki start na VPS
-Jeśli jesteś na serwerze OVH i chcesz uruchomić system:
-```bash
-cd ovh
-./setup-ubuntu.sh
-docker compose up -d --build
-```
+
+1. **Pobranie i aktualizacja:**
+   ```bash
+   cd /opt/zjedzit
+   git pull origin fix-deployment-v2
+   ```
+
+2. **Uruchomienie kontenerów:**
+   ```bash
+   docker compose -f ovh/docker-compose.yml up -d --build
+   ```
+
+3. **Inicjalizacja bazy danych (Produkty ze zdjęciami):**
+   Aby dodać domyślne produkty (Double Cheese, Dynamite Burger, Frytki Belgijskie itd.) wraz z przypisanymi zdjęciami z folderu `static/images`, wykonaj:
+   ```bash
+   docker exec -it zjedzit_app python seed_products.py
+   ```
+   *Możesz zmienić brand (np. na elvis) ustawiając zmienną środowiskową:*
+   ```bash
+   docker exec -e BRAND=elvis -it zjedzit_app python seed_products.py
+   ```
 
 ---
 *Created with ❤️ by the Zjedz.it Team*
