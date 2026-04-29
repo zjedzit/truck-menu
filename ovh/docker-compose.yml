@@ -21,7 +21,7 @@ services:
       retries: 10
   app:
     build:
-      context: /home/debian/truck-menu
+      context: ..
       dockerfile: Dockerfile
     container_name: zjedzit_app
     restart: unless-stopped
