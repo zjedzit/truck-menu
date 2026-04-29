@@ -2468,7 +2468,7 @@ async def soft_pay(table_num: str):
     return {"ok": True}
 
 @app.post("/api/orders")
-async def add_order(order: dict):
+async def add_order(request: Request, order: dict):
     try:
         table_num = str(order.get("table_number"))
         current_session = order.get("session_id")
@@ -2509,6 +2509,7 @@ async def add_order(order: dict):
                 "status": "nowe",
                 "paid": False,
                 "session_id": current_session,
+                "tenant_id": get_brand(request),  # Explicit injection
                 "timestamp": datetime.now(timezone.utc),
                 "note": order.get("note", ""),
                 "to_kitchen": order.get("to_kitchen", True)

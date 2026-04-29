@@ -572,14 +572,14 @@
 
         async function autoInitSession() {
             try {
-                const res = await fetch('/qrtrack/new', {
+                const res = await fetch('/new', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ mode: 'foodtruck' })
                 });
                 const data = await res.json();
                 if (data.session_id) {
-                    window.location.href = '/qrtrack/session/' + data.session_id;
+                    window.location.href = '/session/' + data.session_id;
                 }
             } catch (e) {
                 console.error("Session auto-init failed", e);
